@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="bn" class="h-full bg-[#F5F5F7] antialiased">
 <head>
@@ -1319,10 +1320,15 @@
               </div>
 
               <div class="flex items-center space-x-3">
+                <div class="relative">
+                  <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                  <input type="text" x-model="bulkSearch" placeholder="ক্লায়েন্ট খুঁজুন (নাম / আইডি / মোবাইল)" class="w-64 text-xs pl-9 pr-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-apple-blue/50">
+                </div>
                 <label class="text-xs font-medium text-apple-secondary">এন্ট্রির তারিখ:</label>
                 <input type="date" x-model="bulkEntryDate" class="text-xs font-medium py-2 px-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800">
-                <button @click="saveBulkEntries()" class="px-4 py-2 bg-apple-blue text-white rounded-xl text-xs font-medium hover:bg-blue-600 transition shadow-sm">
-                  সব এন্ট্রি সংরক্ষণ করুন
+                <button @click="saveBulkEntries()" :disabled="isSaving" :class="isSaving ? 'btn-loading' : ''" class="px-4 py-2 bg-apple-blue text-white rounded-xl text-xs font-medium hover:bg-blue-600 transition shadow-sm">
+                  <span x-show="!isSaving">সব এন্ট্রি সংরক্ষণ করুন</span>
+                  <span x-show="isSaving" class="flex items-center gap-1.5"><span class="spinner" style="width:12px;height:12px;border-width:1.5px;"></span> সেভ হচ্ছে...</span>
                 </button>
               </div>
             </div>
@@ -1344,7 +1350,7 @@
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                    <template x-for="item in bulkRows" :key="item.clientId">
+                    <template x-for="item in (bulkSearch ? bulkRows.filter(r => { const q = bulkSearch.toLowerCase(); return r.clientName.toLowerCase().includes(q) || r.clientCode.toLowerCase().includes(q) || (r.mobile || '').toLowerCase().includes(q); }) : bulkRows)" :key="item.clientId">
                       <tr class="hover:bg-gray-50/80 dark:hover:bg-zinc-800/50">
                         <td class="py-2.5 px-3 font-bold text-apple-blue" x-text="item.clientCode"></td>
                         <td class="py-2.5 px-3 font-medium" x-text="item.clientName"></td>
@@ -1547,23 +1553,12 @@
             <div class="bg-white text-black p-6 rounded-2xl border border-gray-200 shadow-lg max-w-4xl mx-auto print-page bill-print font-bengali">
               <template x-if="currentClient && currentBill">
                 <div class="bill-frame">
-                  <!-- Footer charge input (screen only) -->
-                  <div class="no-print mb-4 p-3 bg-apple-gray/40 rounded-xl border border-gray-200 dark:border-gray-800 flex flex-wrap items-center gap-3">
-                    <div>
-                      <label class="block text-[11px] text-apple-secondary mb-1">লেবার চার্জ (৳/কেজি ডেলিভারি):</label>
-                      <p class="text-sm font-bold text-apple-orange" x-text="'৳ ' + (settings.laborRatePerKg || 0)"></p>
-                    </div>
-                    <div class="text-[11px] text-apple-secondary">
-                      <p x-text="'মাসের মোট ডেলিভারি: ' + enNum(currentBill.totalDeliveryKg || 0) + ' কেজি'"></p>
-                      <p x-text="'লেবার চার্জ (বকেয়া): ৳ ' + enMoney(currentBill.laborCharge || 0)"></p>
-                    </div>
-                    <div class="ml-auto">
-                      <label class="block text-[11px] text-apple-secondary mb-1">প্রিন্ট / PDF:</label>
+                  <!-- Print Button (screen only) -->
+                  <div class="no-print mb-4 flex justify-end">
                       <button @click="printMonthlyBill()" class="px-5 py-2 bg-apple-blue text-white rounded-xl text-xs font-medium hover:bg-blue-600 transition flex items-center space-x-2 shadow-md">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                         <span>মাসিক বিল প্রিন্ট করুন</span>
                       </button>
-                    </div>
                   </div>
 
                   <!-- 1. Bill Header: Left (বিল, মাস, সাল) + Right (প্রতিষ্ঠানের নাম ও বিবরণ) -->
@@ -1694,14 +1689,14 @@
                     </table>
                   </div>
 
-                  <!-- 4. Summary Footer Box (বর্তমান মালামাল, বর্তমান মাসের বিল, মোট জমা, বর্তমান বকেয়া) -->
+                  <!-- 4. Summary Footer Box -->
                   <div class="bill-summary-wrap">
                     <table class="bill-summary-table">
                       <thead>
                         <tr class="font-bold">
                           <th colspan="2" class="py-1">বর্তমান মালামাল</th>
                           <th rowspan="2" class="py-1 px-2 align-middle">বর্তমান মাসের বিল</th>
-                          <th rowspan="2" class="py-1 px-2 align-middle">মোট জমা</th>
+                          <th rowspan="2" class="py-1 px-2 align-middle">লেবার চার্জ</th>
                           <th rowspan="2" class="py-1 px-2 align-middle">বর্তমান বকেয়া</th>
                         </tr>
                         <tr class="font-bold">
@@ -1714,8 +1709,8 @@
                           <td class="py-1" x-text="enNum(currentBill.closingStock.bags)"></td>
                           <td class="py-1" x-text="enNum(currentBill.closingStock.kg)"></td>
                           <td class="py-1 px-2 text-left bill-money" x-text="'৳ ' + enMoneyRounded(currentBill.totalCharge)"></td>
-                          <td class="py-1 px-2 text-left bill-money" x-text="'৳ ' + enMoneyRounded(currentBill.totalDeposit)"></td>
-                          <td class="py-1 px-2 text-left bill-money" x-text="'৳ ' + enMoneyRounded(currentBill.openingBalance + currentBill.totalCharge - currentBill.totalDeposit)"></td>
+                          <td class="py-1 px-2 text-left bill-money" x-text="'৳ ' + enMoneyRounded(currentBill.laborCharge || 0)"></td>
+                          <td class="py-1 px-2 text-left bill-money font-bold" x-text="'৳ ' + enMoneyRounded(currentBill.openingBalance + currentBill.totalCharge + (currentBill.laborCharge || 0))"></td>
                         </tr>
                       </tbody>
                     </table>
@@ -3266,9 +3261,9 @@
     // The browser keeps NOTHING in localStorage — every boot pulls from the
     // server, and every change is pushed straight back to the server.
     const ADATA_CONFIG = {
-      appId: 'm-s-m-r-trading-cold-storage',
-      apiKey: 'adcloud_9cf1aa68bf1f5a511c13fb3dee5e7b2443153981d3504afb',
-      serverUrl: 'http://192.168.0.238:3000'
+      appId: 'ms-m-r-trading',
+      apiKey: 'adcloud_2271154a1f84dc1697bbc6408544a712e4ba1d6c5ccab890',
+      serverUrl: 'http://10.145.71.108:3000'
     };
 
     const ADATA_COLLECTIONS = ['settings', 'clients', 'ledger_entries', 'payments', 'rates', 'monthly_bill_snapshots', 'expenses', 'users', 'stores'];
@@ -3593,6 +3588,7 @@
         ledgerEntries: [],
         payments: [],
         bulkRows: [],
+        bulkSearch: '',
         rates: [],
         snapshots: [],
         users: [],
@@ -4896,6 +4892,7 @@
             clientId: c.id,
             clientCode: c.clientId,
             clientName: c.name,
+            mobile: c.mobile || '',
             prevKg: c.currentStock.kg,
             storeId: defStore,
             inBags: 0,
