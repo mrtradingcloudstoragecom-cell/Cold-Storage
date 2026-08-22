@@ -50,6 +50,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
   <style>
+    [x-cloak] { display: none !important; }
     /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -180,29 +181,32 @@
 
     /* ===== Monthly Bill — compact one-page A4 (exact replica of Reference Bill) ===== */
     .bill-frame {
-      border: 2px solid #000000;
+      border: var(--bill-outer-bw, 2px) solid #000000;
       padding: 3.5mm 4.5mm;
       box-sizing: border-box;
       font-family: 'Noto Sans Bengali', Arial, sans-serif;
       background: #ffffff;
-      color: #000000;
+      color: #000000 !important;
       display: flex;
       flex-direction: column;
       min-height: 278mm;
       break-inside: avoid;
       page-break-inside: avoid;
+      font-weight: var(--bill-fw, 700);
+      -webkit-font-smoothing: antialiased;
     }
     .bill-frame * {
       box-sizing: border-box;
+      color: #000000 !important;
     }
     .bill-frame .bill-header-box {
-      border: 1px solid #000000;
+      border: var(--bill-outer-bw, 1.5px) solid #000000;
       display: flex;
       background: #ffffff;
     }
     .bill-frame .bill-left-title-box {
       width: 17%;
-      border-right: 1px solid #000000;
+      border-right: var(--bill-outer-bw, 1.5px) solid #000000;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -212,18 +216,18 @@
     }
     .bill-frame .bill-left-title-box .tag-bill {
       font-size: 15px;
-      font-weight: 700;
+      font-weight: 800;
       line-height: 1.2;
     }
     .bill-frame .bill-left-title-box .tag-month {
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 800;
       line-height: 1.2;
       margin-top: 3px;
     }
     .bill-frame .bill-left-title-box .tag-year {
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
       line-height: 1.2;
       margin-top: 3px;
     }
@@ -233,31 +237,33 @@
       padding: 5px 6px;
     }
     .bill-frame .bill-company-box .company-title {
-      font-size: 20px;
-      font-weight: 800;
+      font-size: var(--bill-title-fs, 20px);
+      font-weight: 900;
       line-height: 1.2;
       letter-spacing: 0.3px;
     }
     .bill-frame .bill-company-box .company-subtitle {
       font-size: 10px;
-      font-weight: 600;
+      font-weight: 700;
       line-height: 1.3;
       margin-top: 2px;
     }
     .bill-frame .bill-company-box .company-address {
       font-size: 9.5px;
+      font-weight: 600;
       line-height: 1.3;
       margin-top: 2px;
     }
     .bill-frame .bill-company-box .company-phones {
       font-size: 9.5px;
+      font-weight: 600;
       line-height: 1.3;
       margin-top: 1px;
     }
 
     /* Client & Circle Info Box */
     .bill-frame .bill-client-circle-box {
-      border: 1px solid #000000;
+      border: var(--bill-outer-bw, 1.5px) solid #000000;
       margin-top: 5px;
       background: #ffffff;
     }
@@ -265,16 +271,24 @@
     .bill-frame .bill-circle-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 9.5px;
+      font-size: var(--bill-fs, 9.5px);
+      font-weight: var(--bill-fw, 700);
     }
     .bill-frame .bill-client-table td {
       padding: 2px 6px;
       line-height: 1.35;
+      border-color: #000000 !important;
+      font-weight: var(--bill-fw, 700);
+    }
+    .bill-frame .bill-circle-table {
+      border-left: var(--bill-outer-bw, 1.5px) solid #000000;
     }
     .bill-frame .bill-circle-table th,
     .bill-frame .bill-circle-table td {
       padding: 2px 4px;
       line-height: 1.35;
+      border-color: #000000 !important;
+      font-weight: var(--bill-fw, 700);
     }
 
     /* Main Transactions Table */
@@ -291,23 +305,27 @@
       flex: 1 1 auto;
       min-height: 0;
       border-collapse: collapse;
-      font-size: 8.5px;
+      font-size: var(--bill-fs, 8.5px);
+      font-weight: var(--bill-fw, 700);
     }
     .bill-frame .bill-data-table th {
-      border: 1px solid #000000;
+      border: var(--bill-inner-bw, 1.5px) solid #000000 !important;
       padding: 2px 2px;
-      font-size: 9px;
-      font-weight: 700;
+      font-size: calc(var(--bill-fs, 8.5px) + 0.5px);
+      font-weight: 800;
       text-align: center;
       background: #ffffff;
       line-height: 1.25;
+      color: #000000 !important;
     }
     .bill-frame .bill-data-table td {
-      border: 1px solid #000000;
+      border: var(--bill-inner-bw, 1.5px) solid #000000 !important;
       padding: 1px 3px;
-      font-size: 8.5px;
+      font-size: var(--bill-fs, 8.5px);
+      font-weight: var(--bill-fw, 700);
       line-height: 1.25;
       background: #ffffff;
+      color: #000000 !important;
     }
 
     /* Summary Footer Box */
@@ -318,18 +336,21 @@
     }
     .bill-frame .bill-summary-table {
       border-collapse: collapse;
-      font-size: 9px;
+      font-size: var(--bill-fs, 9px);
       width: auto;
       min-width: 62.5%;
+      font-weight: var(--bill-fw, 700);
     }
     .bill-frame .bill-summary-table th,
     .bill-frame .bill-summary-table td {
-      border: 1px solid #000000;
+      border: var(--bill-inner-bw, 1.5px) solid #000000 !important;
       padding: 2px 6px;
-      font-size: 9px;
+      font-size: var(--bill-fs, 9px);
+      font-weight: var(--bill-fw, 700);
       text-align: center;
       background: #ffffff;
       line-height: 1.3;
+      color: #000000 !important;
     }
     .bill-frame .bill-money {
       white-space: nowrap;
@@ -373,12 +394,13 @@
 
     /* ===== Master Summary Report — A4 Landscape spec layout ===== */
     .master-report {
-      border: 2px solid #000000;
+      border: var(--master-outer-bw, 2px) solid #000000;
       font-family: 'Noto Sans Bengali', Arial, sans-serif;
       background: #ffffff;
-      color: #000000;
+      color: #000000 !important;
       width: 100%;
       box-sizing: border-box;
+      font-weight: var(--master-fw, 700);
     }
     .master-report .master-table {
       width: 100%;
@@ -386,21 +408,24 @@
       table-layout: fixed;
     }
     .master-report .master-cell {
-      border: 1px solid #000000;
+      border: var(--master-inner-bw, 1.5px) solid #000000 !important;
       padding: 2.5px 4px;
-      font-size: 9.5px;
+      font-size: var(--master-fs, 9.5px);
       line-height: 1.3;
       vertical-align: middle;
       background: #ffffff;
+      font-weight: var(--master-fw, 700);
+      color: #000000 !important;
     }
     .master-report .master-title {
-      font-size: 20px;
-      font-weight: 800;
+      font-size: var(--master-title-fs, 20px);
+      font-weight: 900;
       letter-spacing: 0.3px;
       line-height: 1.2;
     }
     .master-report .master-sub {
       font-size: 9.5px;
+      font-weight: 600;
       line-height: 1.3;
     }
     .master-report .master-money {
@@ -435,6 +460,11 @@
         padding: 0 !important;
         border: none !important;
         box-shadow: none !important;
+      }
+      .bill-frame *, .master-report * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color: #000000 !important;
       }
     }
     .print-only { display: none; }
@@ -593,7 +623,7 @@
       <div class="flex-1 overflow-y-auto p-6 space-y-6">
 
         <!-- 1. DASHBOARD TAB -->
-        <template x-if="activeTab === 'dashboard'">
+        <div x-show="activeTab === 'dashboard'" x-cloak>
           <div class="space-y-6">
             <!-- Welcome Hero Banner -->
             <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-apple-blue to-indigo-600 text-white p-6 sm:p-8 shadow-lg no-print">
@@ -683,11 +713,11 @@
                 </div>
 
                 <div class="flex items-end gap-3 h-44 mt-2">
-                  <template x-for="m in getTrendMonths()" :key="m.key">
+                  <template x-for="(m, idx) in dashboardTrend.months" :key="m.key">
                     <div class="flex-1 flex flex-col items-center gap-1.5 h-full">
                       <div class="w-full flex-1 flex items-end gap-1 px-0.5 min-h-0">
-                        <div class="flex-1 rounded-t-md bg-apple-blue/75 hover:bg-apple-blue transition-all" :style="'height:' + Math.max(pctOf(getMonthTrendData(m.key).charge, getTrendMax()), 2) + '%'" :title="'ভাড়া: ৳ ' + formatMoney(getMonthTrendData(m.key).charge)"></div>
-                        <div class="flex-1 rounded-t-md bg-apple-green/75 hover:bg-apple-green transition-all" :style="'height:' + Math.max(pctOf(getMonthTrendData(m.key).deposit, getTrendMax()), 2) + '%'" :title="'জমা: ৳ ' + formatMoney(getMonthTrendData(m.key).deposit)"></div>
+                        <div class="flex-1 rounded-t-md bg-apple-blue/75 hover:bg-apple-blue transition-all" :style="'height:' + Math.max(pctOf(dashboardTrend.data[idx].charge, dashboardTrend.maxVal), 2) + '%'" :title="'ভাড়া: ৳ ' + formatMoney(dashboardTrend.data[idx].charge)"></div>
+                        <div class="flex-1 rounded-t-md bg-apple-green/75 hover:bg-apple-green transition-all" :style="'height:' + Math.max(pctOf(dashboardTrend.data[idx].deposit, dashboardTrend.maxVal), 2) + '%'" :title="'জমা: ৳ ' + formatMoney(dashboardTrend.data[idx].deposit)"></div>
                       </div>
                       <span class="text-[10px] text-apple-secondary text-center" x-text="m.label"></span>
                     </div>
@@ -787,10 +817,10 @@
               </div>
             </div>
           </div>
-        </template>
+        </div>
 
         <!-- 2. CLIENTS MANAGEMENT TAB -->
-        <template x-if="activeTab === 'clients'">
+        <div x-show="activeTab === 'clients'" x-cloak>
           <div class="space-y-6">
             <!-- Header Filter Bar -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -801,8 +831,14 @@
                 <button @click="clientFilter = 'due'" :class="clientFilter==='due' ? 'bg-apple-blue text-white':'bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300'" class="px-3 py-1.5 rounded-lg text-xs font-medium transition">বকেয়া আছে</button>
               </div>
 
-              <div class="text-xs text-apple-secondary">
-                মোট ক্লায়েন্ট দেখাচ্ছে: <span class="font-semibold text-apple-text dark:text-white" x-text="getFilteredClients().length"></span> জন
+              <div class="flex items-center gap-3">
+                <div class="relative">
+                  <input type="text" x-model="globalSearch" placeholder="ক্লায়েন্ট খুঁজুন (নাম / আইডি / মোবাইল)" class="pl-8 pr-3 py-1.5 text-xs rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-zinc-800 w-56 focus:outline-none focus:ring-2 focus:ring-apple-blue/50">
+                  <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-apple-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+                <div class="text-xs text-apple-secondary">
+                  মোট: <span class="font-semibold text-apple-text dark:text-white" x-text="getFilteredClients().length"></span> জন
+                </div>
               </div>
             </div>
 
@@ -818,7 +854,7 @@
                       <th class="py-3 px-4">সাবেক স্টক (উদ্বোধনী)</th>
                       <th class="py-3 px-4">বর্তমান স্টক (বস্তা / কেজি)</th>
                       <th class="py-3 px-4">দৈনিক দর</th>
-                      <th class="py-3 px-4 text-right">বর্তমান বকেয়া</th>
+                      <th class="py-3 px-4 text-right">মোট বিল</th>
                       <th class="py-3 px-4 text-center">অ্যাকশন</th>
                     </tr>
                   </thead>
@@ -850,10 +886,10 @@
               </div>
             </div>
           </div>
-        </template>
+        </div>
 
         <!-- 3. INDIVIDUAL CLIENT LEDGER TAB -->
-        <template x-if="activeTab === 'client-ledger'">
+        <div x-show="activeTab === 'client-ledger'" x-cloak>
           <div class="space-y-6">
             <!-- Client Selection & Ledger Header -->
             <div class="bg-white dark:bg-apple-darkCard p-6 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm space-y-4">
@@ -965,10 +1001,10 @@
               </div>
             </div>
           </div>
-        </template>
+        </div>
 
         <!-- 4. CLIENT LEDGER REPORT TAB (date-range + print) -->
-        <template x-if="activeTab === 'client-report'">
+        <div x-show="activeTab === 'client-report'" x-cloak>
           <div class="space-y-6">
             <!-- Client Ledger Report (Date Range + Print) -->
             <div class="bg-white dark:bg-apple-darkCard rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm overflow-hidden">
@@ -1027,7 +1063,7 @@
               <div x-show="clientReportMode === 'single'" class="p-5">
                 <template x-if="clientRangeReport">
                   <div class="bg-white text-black p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-lg max-w-4xl mx-auto print-page bill-print font-bengali">
-                    <div class="bill-frame">
+                    <div class="bill-frame" :style="getClientReportStyle()">
                       <!-- 1. Bill Header: Left (রিপোর্ট, তারিখ রেঞ্জ) + Right (প্রতিষ্ঠানের নাম ও বিবরণ) -->
                       <div class="bill-header-box">
                         <div class="bill-left-title-box">
@@ -1037,9 +1073,9 @@
                         </div>
                         <div class="bill-company-box">
                           <h1 class="company-title font-bold" x-text="settings.businessName"></h1>
-                          <p class="company-subtitle font-medium" x-text="settings.businessSubtitle || 'সকল প্রকার শুঁটকি ও কাঁচা মাছ ভাড়ায় রাখা হয়'"></p>
-                          <p class="company-address" x-text="'কার্যালয়: ' + (settings.businessAddress || '৪১৩৪ নং আসাদগঞ্জ, চাক্তাই, কোতোয়ালী, চট্টগ্রাম')"></p>
-                          <p class="company-phones" x-text="'অফিস: ' + (settings.businessPhones || '০১৮২৯-৪২৩৬৮০, ০১৩১২-৬৪১৯০১, ০১৬৩৪-৫২৮৬৪৬')"></p>
+                          <p class="company-subtitle font-medium" x-text="settings.businessSubtitle || 'সকল প্রকার শুট্কি ও কাঁচা মাছ ভাড়ায় রাখা হয়'"></p>
+                          <p class="company-address" x-text="'কার্যালয়: ' + (settings.businessAddress || '১৩৫৪ নং আছাদগঞ্জ, শুট্কিপট্টি, কোতোয়ালী, চট্টগ্রাম')"></p>
+                          <p class="company-phones" x-text="'অফিস: ' + (settings.businessPhones || '০১৮৯২-৪২০৬৮০, ০১৩১২-৬৪৯৩০৫, ০১৮৬৪-৫৮২৬৪৬')"></p>
                         </div>
                       </div>
 
@@ -1164,7 +1200,7 @@
                               <th colspan="2" class="py-1">বর্তমান মালামাল</th>
                               <th rowspan="2" class="py-1 px-2 align-middle">বর্তমান মাসের বিল</th>
                               <th rowspan="2" class="py-1 px-2 align-middle">মোট জমা</th>
-                              <th rowspan="2" class="py-1 px-2 align-middle">বর্তমান বকেয়া</th>
+                              <th rowspan="2" class="py-1 px-2 align-middle">মোট বিল</th>
                             </tr>
                             <tr class="font-bold">
                               <th class="py-0.5" style="width: 50px;">বস্তা</th>
@@ -1193,16 +1229,16 @@
               <!-- 2. All Clients Report: Master Summary Style with Extended Columns (A4 Landscape) -->
               <div x-show="clientReportMode === 'all'" class="p-5">
                 <div class="bg-white text-black p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-lg max-w-6xl mx-auto print-page bill-print font-bengali">
-                  <div class="master-report master-landscape font-bengali overflow-x-auto">
+                  <div class="master-report master-landscape font-bengali overflow-x-auto" :style="getMasterReportStyle()">
                     <table class="master-table">
                       <thead>
                         <!-- 1. Company Header Block -->
                         <tr>
                           <th colspan="13" class="master-cell text-center py-3 px-2">
                             <h1 class="master-title font-bold" x-text="settings.businessName"></h1>
-                            <p class="master-sub font-medium mt-1" x-text="settings.businessSubtitle || 'সকল প্রকার শুঁটকি ও কাঁচা মাছ ভাড়ায় রাখা হয়'"></p>
-                            <p class="master-sub mt-0.5" x-text="'কার্যালয়: ' + (settings.businessAddress || '৪১৩৪ নং আসাদগঞ্জ, চাক্তাই, কোতোয়ালী, চট্টগ্রাম')"></p>
-                            <p class="master-sub" x-text="'অফিস: ' + (settings.businessPhones || '০১৮২৯-৪২৩৬৮০, ০১৩১২-৬৪১৯০১, ০১৬৩৪-৫২৮৬৪৬')"></p>
+                            <p class="master-sub font-medium mt-1" x-text="settings.businessSubtitle || 'সকল প্রকার শুট্কি ও কাঁচা মাছ ভাড়ায় রাখা হয়'"></p>
+                            <p class="master-sub mt-0.5" x-text="'কার্যালয়: ' + (settings.businessAddress || '১৩৫৪ নং আছাদগঞ্জ, শুট্কিপট্টি, কোতোয়ালী, চট্টগ্রাম')"></p>
+                            <p class="master-sub" x-text="'অফিস: ' + (settings.businessPhones || '০১৮৯২-৪২০৬৮০, ০১৩১২-৬৪৯৩০৫, ০১৮৬৪-৫৮২৬৪৬')"></p>
                           </th>
                         </tr>
 
@@ -1307,10 +1343,10 @@
               </div>
             </div>
           </div>
-        </template>
+        </div>
 
         <!-- 4. DAILY BULK ENTRY GRID TAB -->
-        <template x-if="activeTab === 'daily-bulk'">
+        <div x-show="activeTab === 'daily-bulk'" x-cloak>
           <div class="space-y-6">
             <!-- Header Date Picker -->
             <div class="bg-white dark:bg-apple-darkCard p-5 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -1395,10 +1431,10 @@
               </div>
             </div>
           </div>
-        </template>
+        </div>
 
         <!-- 5. MASTER SUMMARY LEDGER TAB (Reference Image 2 Replica) -->
-        <template x-if="activeTab === 'master-ledger'">
+        <div x-show="activeTab === 'master-ledger'" x-cloak>
           <div class="space-y-6">
             <div class="bg-white dark:bg-apple-darkCard p-5 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
               <div>
@@ -1423,16 +1459,16 @@
 
             <!-- Master Summary Report: A4 Landscape spec format -->
             <div class="bg-white text-black p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-lg max-w-6xl mx-auto print-page bill-print font-bengali">
-              <div class="master-report master-landscape font-bengali overflow-x-auto">
+              <div class="master-report master-landscape font-bengali overflow-x-auto" :style="getMasterReportStyle()">
                 <table class="master-table">
                   <thead>
                     <!-- 1. Company Header Block -->
                     <tr>
                       <th colspan="9" class="master-cell text-center py-3 px-2">
                         <h1 class="master-title font-bold" x-text="settings.businessName"></h1>
-                        <p class="master-sub font-medium mt-1" x-text="settings.businessSubtitle || 'সকল প্রকার শুঁটকি ও কাঁচা মাছ ভাড়ায় রাখা হয়'"></p>
-                        <p class="master-sub mt-0.5" x-text="'কার্যালয়: ' + (settings.businessAddress || '৪১৩৪ নং আসাদগঞ্জ, চাক্তাই, কোতোয়ালী, চট্টগ্রাম')"></p>
-                        <p class="master-sub" x-text="'অফিস: ' + (settings.businessPhones || '০১৮২৯-৪২৩৬৮০, ০১৩১২-৬৪১৯০১, ০১৬৩৪-৫২৮৬৪৬')"></p>
+                        <p class="master-sub font-medium mt-1" x-text="settings.businessSubtitle || 'সকল প্রকার শুট্কি ও কাঁচা মাছ ভাড়ায় রাখা হয়'"></p>
+                        <p class="master-sub mt-0.5" x-text="'কার্যালয়: ' + (settings.businessAddress || '১৩৫৪ নং আছাদগঞ্জ, শুট্কিপট্টি, কোতোয়ালী, চট্টগ্রাম')"></p>
+                        <p class="master-sub" x-text="'অফিস: ' + (settings.businessPhones || '০১৮৯২-৪২০৬৮০, ০১৩১২-৬৪৯৩০৫, ০১৮৬৪-৫৮২৬৪৬')"></p>
                       </th>
                     </tr>
 
@@ -1521,10 +1557,10 @@
               </div>
             </div>
           </div>
-        </template>
+        </div>
 
         <!-- 6. BILL GENERATOR / PRINTABLE STATEMENT (Reference Image 1 Replica) -->
-        <template x-if="activeTab === 'bills'">
+        <div x-show="activeTab === 'bills'" x-cloak>
           <div class="space-y-6">
             <!-- Selector Controls -->
             <div class="bg-white dark:bg-apple-darkCard p-5 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
@@ -1552,7 +1588,7 @@
             <!-- Print Statement Card (Exact layout replica of Reference Bill 1) -->
             <div class="bg-white text-black p-6 rounded-2xl border border-gray-200 shadow-lg max-w-4xl mx-auto print-page bill-print font-bengali">
               <template x-if="currentClient && currentBill">
-                <div class="bill-frame">
+                <div class="bill-frame" :style="getBillFrameStyle()">
                   <!-- Print Button (screen only) -->
                   <div class="no-print mb-4 flex justify-end">
                       <button @click="printMonthlyBill()" class="px-5 py-2 bg-apple-blue text-white rounded-xl text-xs font-medium hover:bg-blue-600 transition flex items-center space-x-2 shadow-md">
@@ -1565,14 +1601,14 @@
                   <div class="bill-header-box">
                     <div class="bill-left-title-box">
                       <div class="tag-bill">বিল</div>
-                      <div class="tag-month text-[10px] leading-tight" x-text="formatDate(currentBill.rows[0]?.date || '')"></div>
-                      <div class="tag-year text-[9px] leading-tight">হইতে <span x-text="formatDate(currentBill.rows[currentBill.rows.length-1]?.date || '')"></span></div>
+                      <div class="tag-month text-[10px] leading-tight" x-text="getBengaliMonth(currentBill.rows[0]?.date || '')"></div>
+                      <div class="tag-year text-[9px] leading-tight" x-text="getBengaliYear(currentBill.rows[0]?.date || '') + 'ইং'"></div>
                     </div>
                     <div class="bill-company-box">
                       <h1 class="company-title" x-text="settings.businessName"></h1>
-                      <p class="company-subtitle" x-text="settings.businessSubtitle || 'সকল প্রকার ভউক্তি ও খাতা নাম্না ভাড়া প্রদান হয়'"></p>
-                      <p class="company-address" x-text="'কার্যালয়: ' + (settings.businessAddress || '১৩৫৪ নং আছাদগঞ্জ, হার্ডতিবাট্টি, কোতোয়ালী, চট্টগ্রাম')"></p>
-                      <p class="company-phones" x-text="'অফিস: ' + (settings.businessPhones || '০১৮২৯-৪২৩৬৮০, ০১৩১২-৬৪১৯০১, ০১৬৩৪-৫২৮৬৪৬')"></p>
+                      <p class="company-subtitle" x-text="settings.businessSubtitle || 'সকল প্রকার শুট্কি ও কাঁচা মাছ ভাড়ায় রাখা হয়'"></p>
+                      <p class="company-address" x-text="'কার্যালয়: ' + (settings.businessAddress || '১৩৫৪ নং আছাদগঞ্জ, শুট্কিপট্টি, কোতোয়ালী, চট্টগ্রাম')"></p>
+                      <p class="company-phones" x-text="'অফিস: ' + (settings.businessPhones || '০১৮৯২-৪২০৬৮০, ০১৩১২-৬৪৯৩০৫, ০১৮৬৪-৫৮২৬৪৬')"></p>
                     </div>
                   </div>
 
@@ -1697,7 +1733,7 @@
                           <th colspan="2" class="py-1">বর্তমান মালামাল</th>
                           <th rowspan="2" class="py-1 px-2 align-middle">বর্তমান মাসের বিল</th>
                           <th rowspan="2" class="py-1 px-2 align-middle">লেবার চার্জ</th>
-                          <th rowspan="2" class="py-1 px-2 align-middle">বর্তমান বকেয়া</th>
+                          <th rowspan="2" class="py-1 px-2 align-middle">মাট বিল</th>
                         </tr>
                         <tr class="font-bold">
                           <th class="py-0.5" style="width: 50px;">বস্তা</th>
@@ -1722,10 +1758,10 @@
               </template>
             </div>
           </div>
-        </template>
+        </div>
 
         <!-- 7. PAYMENTS TAB -->
-        <template x-if="activeTab === 'payments'">
+        <div x-show="activeTab === 'payments'" x-cloak>
           <div class="space-y-6">
             <div class="bg-white dark:bg-apple-darkCard p-5 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm flex justify-between items-center">
               <div>
@@ -1762,10 +1798,10 @@
               </table>
             </div>
           </div>
-        </template>
+        </div>
 
         <!-- 7.5 DAILY INCOME/EXPENSE TAB -->
-        <template x-if="activeTab === 'daily-cash'">
+        <div x-show="activeTab === 'daily-cash'" x-cloak>
           <div class="space-y-6">
             <!-- Page Header -->
             <div class="bg-white dark:bg-apple-darkCard p-5 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -1923,10 +1959,10 @@
               </div>
             </div>
           </div>
-        </template>
+        </div>
 
         <!-- 8. REPORTS TAB -->
-        <template x-if="activeTab === 'reports'">
+        <div x-show="activeTab === 'reports'" x-cloak>
           <div class="space-y-6">
             <!-- Page Header -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -1978,11 +2014,11 @@
               </div>
 
               <div class="flex items-end gap-3 h-48 mt-2">
-                <template x-for="m in getTrendMonths()" :key="m.key">
+                <template x-for="(m, idx) in dashboardTrend.months" :key="m.key">
                   <div class="flex-1 flex flex-col items-center gap-1.5 h-full">
                     <div class="w-full flex-1 flex items-end gap-1 px-0.5 min-h-0">
-                      <div class="flex-1 rounded-t-md bg-apple-blue/75 hover:bg-apple-blue transition-all" :style="'height:' + Math.max(pctOf(getMonthTrendData(m.key).charge, getTrendMax()), 2) + '%'" :title="'ভাড়া: ৳ ' + formatMoney(getMonthTrendData(m.key).charge)"></div>
-                      <div class="flex-1 rounded-t-md bg-apple-green/75 hover:bg-apple-green transition-all" :style="'height:' + Math.max(pctOf(getMonthTrendData(m.key).deposit, getTrendMax()), 2) + '%'" :title="'জমা: ৳ ' + formatMoney(getMonthTrendData(m.key).deposit)"></div>
+                      <div class="flex-1 rounded-t-md bg-apple-blue/75 hover:bg-apple-blue transition-all" :style="'height:' + Math.max(pctOf(dashboardTrend.data[idx].charge, dashboardTrend.maxVal), 2) + '%'" :title="'ভাড়া: ৳ ' + formatMoney(dashboardTrend.data[idx].charge)"></div>
+                      <div class="flex-1 rounded-t-md bg-apple-green/75 hover:bg-apple-green transition-all" :style="'height:' + Math.max(pctOf(dashboardTrend.data[idx].deposit, dashboardTrend.maxVal), 2) + '%'" :title="'জমা: ৳ ' + formatMoney(dashboardTrend.data[idx].deposit)"></div>
                     </div>
                     <span class="text-[10px] text-apple-secondary text-center" x-text="m.label"></span>
                   </div>
@@ -2088,10 +2124,10 @@
               </div>
             </div>
           </div>
-        </template>
+        </div>
 
         <!-- 10. RATES MANAGEMENT TAB -->
-        <template x-if="activeTab === 'rates'">
+        <div x-show="activeTab === 'rates'" x-cloak>
           <div class="space-y-6">
             <!-- Hero Header -->
             <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-apple-blue via-indigo-600 to-purple-600 text-white p-6 shadow-lg">
@@ -2420,11 +2456,11 @@
               </div>
             </div>
           </div>
-        </template>
+        </div>
 
         <!-- 11. SETTINGS TAB -->
         <!-- CLOUD SERVER CONFIGURATION TAB -->
-        <template x-if="activeTab === 'cloud'">
+        <div x-show="activeTab === 'cloud'" x-cloak>
           <div class="space-y-6">
             <div class="cloud-page p-6 sm:p-8">
 
@@ -2576,15 +2612,22 @@
               </div>
             </div>
           </div>
-        </template>
+        </div>
 
         <!-- SETTINGS TAB -->
-        <template x-if="activeTab === 'settings'">
+        <div x-show="activeTab === 'settings'" x-cloak>
           <div class="space-y-6 max-w-3xl mx-auto">
             
             <!-- Business Info Settings -->
             <div class="bg-white dark:bg-apple-darkCard p-6 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm space-y-4">
-              <h3 class="text-base font-semibold">ব্যবসার তথ্য ও বিল হেডার</h3>
+              <div class="flex justify-between items-center">
+                <h3 class="text-base font-semibold">ব্যবসার তথ্য ও বিল হেডার</h3>
+                <button @click="saveSettings()" :disabled="isSaving" :class="isSaving ? 'btn-loading' : ''" class="px-4 py-2 bg-apple-blue text-white text-xs font-semibold rounded-xl hover:bg-blue-600 transition shadow-sm flex items-center space-x-1.5">
+                  <template x-if="!isSaving"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></template>
+                  <template x-if="isSaving"><svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg></template>
+                  <span x-text="isSaving ? 'সেভ হচ্ছে...' : 'সেভ করুন'"></span>
+                </button>
+              </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
                   <label class="block text-apple-secondary mb-1">প্রতিষ্ঠানের নাম:</label>
@@ -2602,6 +2645,189 @@
                   <label class="block text-apple-secondary mb-1">ফোন নম্বরসমূহ:</label>
                   <input type="text" x-model="settings.businessPhones" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800">
                 </div>
+              </div>
+            </div>
+
+            <!-- Print & Bill Styling Settings -->
+            <div class="bg-white dark:bg-apple-darkCard p-6 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm space-y-4">
+              <div class="flex justify-between items-center">
+                <div>
+                  <h3 class="text-base font-semibold">প্রিন্ট ও বিলের ডিজাইন কন্ট্রোল</h3>
+                  <p class="text-[11px] text-apple-secondary mt-0.5">বর্ডারের গাঢ়ত্ব, লেখার বোল্ডনেস ও ফন্ট সাইজ সেট করুন</p>
+                </div>
+                <button @click="saveSettings()" :disabled="isSaving" :class="isSaving ? 'btn-loading' : ''" class="px-4 py-2 bg-apple-blue text-white text-xs font-semibold rounded-xl hover:bg-blue-600 transition shadow-sm flex items-center space-x-1.5">
+                  <template x-if="!isSaving"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></template>
+                  <template x-if="isSaving"><svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg></template>
+                  <span x-text="isSaving ? 'সেভ হচ্ছে...' : 'সেভ করুন'"></span>
+                </button>
+              </div>
+
+              <!-- Preset Buttons -->
+              <div class="flex flex-wrap gap-2">
+                <button @click="applyPrintPreset('dark_bold')" class="px-4 py-2 rounded-xl text-xs font-medium border-2 transition" :class="settings.printConfig?.billFontWeight === '800' && settings.printConfig?.billBorderWidth === '2px' ? 'border-apple-blue bg-apple-blue/10 text-apple-blue' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300 hover:border-apple-blue'">
+                  <span class="font-bold">খুব গাঢ় (Bold)</span>
+                  <span class="block text-[10px] text-apple-secondary mt-0.5">বর্ডার ২px, বোল্ড ৮০০</span>
+                </button>
+                <button @click="applyPrintPreset('extra_heavy')" class="px-4 py-2 rounded-xl text-xs font-medium border-2 transition" :class="settings.printConfig?.billFontWeight === '900' && settings.printConfig?.billBorderWidth === '2.5px' ? 'border-apple-orange bg-apple-orange/10 text-apple-orange' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300 hover:border-apple-orange'">
+                  <span class="font-bold">অতিরিক্ত গাঢ় (Heavy)</span>
+                  <span class="block text-[10px] text-apple-secondary mt-0.5">বর্ডার ২.৫px, বোল্ড ৯০০</span>
+                </button>
+                <button @click="applyPrintPreset('standard')" class="px-4 py-2 rounded-xl text-xs font-medium border-2 transition" :class="settings.printConfig?.billFontWeight === '600' ? 'border-apple-green bg-apple-green/10 text-apple-green' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-300 hover:border-apple-green'">
+                  <span class="font-bold">স্বাভাবিক (Standard)</span>
+                  <span class="block text-[10px] text-apple-secondary mt-0.5">বর্ডার ১px, বোল্ড ৬০০</span>
+                </button>
+              </div>
+
+              <!-- Manual Controls: Monthly Bill -->
+              <div class="p-4 bg-gray-50 dark:bg-zinc-800/50 rounded-xl space-y-3">
+                <p class="text-xs font-semibold flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-apple-blue"></span> মাসিক বিল (Monthly Bill)
+                </p>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div>
+                    <label class="block text-apple-secondary mb-1">বর্ডার পুরুত্ব</label>
+                    <select x-model="settings.printConfig.billBorderWidth" class="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-zinc-800">
+                      <option value="1px">১px — পাতলা</option>
+                      <option value="1.5px">১.৫px — স্বাভাবিক</option>
+                      <option value="2px">২px — গাঢ়</option>
+                      <option value="2.5px">২.৫px — মোটা</option>
+                      <option value="3px">৩px — খুব মোটা</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-apple-secondary mb-1">টেবিল বর্ডার</label>
+                    <select x-model="settings.printConfig.billTableBorderWidth" class="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-zinc-800">
+                      <option value="1px">১px — পাতলা</option>
+                      <option value="1.5px">১.৫px — স্বাভাবিক</option>
+                      <option value="2px">২px — গাঢ়</option>
+                      <option value="2.5px">২.৫px — মোটা</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-apple-secondary mb-1">লেখার গাঢ়ত্ব</label>
+                    <select x-model="settings.printConfig.billFontWeight" class="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-zinc-800">
+                      <option value="600">৬০০ — সেমি বোল্ড</option>
+                      <option value="700">৭০০ — বোল্ড</option>
+                      <option value="800">৮০০ — এক্সট্রা বোল্ড</option>
+                      <option value="900">৯০০ — ব্ল্যাক</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-apple-secondary mb-1">ফন্ট সাইজ</label>
+                    <select x-model="settings.printConfig.billFontSize" class="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-zinc-800">
+                      <option value="8px">৮px — কমপ্যাক্ট</option>
+                      <option value="8.5px">৮.৫px — ছোট</option>
+                      <option value="9px">৯px — স্বাভাবিক</option>
+                      <option value="9.5px">৯.৫px — বড়</option>
+                      <option value="10px">১০px — বড় ও স্পষ্ট</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Manual Controls: Master Report -->
+              <div class="p-4 bg-gray-50 dark:bg-zinc-800/50 rounded-xl space-y-3">
+                <p class="text-xs font-semibold flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-apple-green"></span> মাস্টার সামারি রিপোর্ট (Master Report)
+                </p>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div>
+                    <label class="block text-apple-secondary mb-1">বর্ডার পুরুত্ব</label>
+                    <select x-model="settings.printConfig.masterBorderWidth" class="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-zinc-800">
+                      <option value="1px">১px — পাতলা</option>
+                      <option value="1.5px">১.৫px — স্বাভাবিক</option>
+                      <option value="2px">২px — গাঢ়</option>
+                      <option value="2.5px">২.৫px — মোটা</option>
+                      <option value="3px">৩px — খুব মোটা</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-apple-secondary mb-1">টেবিল বর্ডার</label>
+                    <select x-model="settings.printConfig.masterTableBorderWidth" class="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-zinc-800">
+                      <option value="1px">১px — পাতলা</option>
+                      <option value="1.5px">১.৫px — স্বাভাবিক</option>
+                      <option value="2px">২px — গাঢ়</option>
+                      <option value="2.5px">২.৫px — মোটা</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-apple-secondary mb-1">লেখার গাঢ়ত্ব</label>
+                    <select x-model="settings.printConfig.masterFontWeight" class="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-zinc-800">
+                      <option value="600">৬০০ — সেমি বোল্ড</option>
+                      <option value="700">৭০০ — বোল্ড</option>
+                      <option value="800">৮০০ — এক্সট্রা বোল্ড</option>
+                      <option value="900">৯০০ — ব্ল্যাক</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-apple-secondary mb-1">ফন্ট সাইজ</label>
+                    <select x-model="settings.printConfig.masterFontSize" class="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-zinc-800">
+                      <option value="9px">৯px — কমপ্যাক্ট</option>
+                      <option value="9.5px">৯.৫px — ছোট</option>
+                      <option value="10px">১০px — স্বাভাবিক</option>
+                      <option value="10.5px">১০.৫px — বড়</option>
+                      <option value="11px">১১px — বড় ও স্পষ্ট</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Manual Controls: Client Report -->
+              <div class="p-4 bg-gray-50 dark:bg-zinc-800/50 rounded-xl space-y-3">
+                <p class="text-xs font-semibold flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-apple-orange"></span> ক্লায়েন্ট রিপোর্ট (Client Report)
+                </p>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div>
+                    <label class="block text-apple-secondary mb-1">বর্ডার পুরুত্ব</label>
+                    <select x-model="settings.printConfig.reportBorderWidth" class="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-zinc-800">
+                      <option value="1px">১px — পাতলা</option>
+                      <option value="1.5px">১.৫px — স্বাভাবিক</option>
+                      <option value="2px">২px — গাঢ়</option>
+                      <option value="2.5px">২.৫px — মোটা</option>
+                      <option value="3px">৩px — খুব মোটা</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-apple-secondary mb-1">টেবিল বর্ডার</label>
+                    <select x-model="settings.printConfig.reportTableBorderWidth" class="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-zinc-800">
+                      <option value="1px">১px — পাতলা</option>
+                      <option value="1.5px">১.৫px — স্বাভাবিক</option>
+                      <option value="2px">২px — গাঢ়</option>
+                      <option value="2.5px">২.৫px — মোটা</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-apple-secondary mb-1">লেখার গাঢ়ত্ব</label>
+                    <select x-model="settings.printConfig.reportFontWeight" class="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-zinc-800">
+                      <option value="600">৬০০ — সেমি বোল্ড</option>
+                      <option value="700">৭০০ — বোল্ড</option>
+                      <option value="800">৮০০ — এক্সট্রা বোল্ড</option>
+                      <option value="900">৯০০ — ব্ল্যাক</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-apple-secondary mb-1">ফন্ট সাইজ</label>
+                    <select x-model="settings.printConfig.reportFontSize" class="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-zinc-800">
+                      <option value="8px">৮px — কমপ্যাক্ট</option>
+                      <option value="8.5px">৮.৫px — ছোট</option>
+                      <option value="9px">৯px — স্বাভাবিক</option>
+                      <option value="9.5px">৯.৫px — বড়</option>
+                      <option value="10px">১০px — বড় ও স্পষ্ট</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Deep Black Mode Toggle -->
+              <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-800/50 rounded-xl">
+                <div>
+                  <p class="text-xs font-semibold">ডিপ ব্ল্যাক মোড (High Contrast)</p>
+                  <p class="text-[11px] text-apple-secondary">প্রিন্টে সম্পূর্ণ কালো (#000) — কোনো ছাই বা হালকা গ্রে ছায়া পড়বে না</p>
+                </div>
+                <button @click="settings.printConfig.deepBlackMode = !settings.printConfig.deepBlackMode; saveSettings()" class="relative w-11 h-6 rounded-full transition-colors" :class="settings.printConfig.deepBlackMode ? 'bg-apple-blue' : 'bg-gray-300 dark:bg-zinc-600'">
+                  <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform" :class="settings.printConfig.deepBlackMode ? 'translate-x-5' : ''"></span>
+                </button>
               </div>
             </div>
 
@@ -2663,10 +2889,10 @@
             </div>
 
           </div>
-        </template>
+        </div>
 
         <!-- Store Management Page (Admin Only) -->
-        <template x-if="activeTab === 'stores'">
+        <div x-show="activeTab === 'stores'" x-cloak>
           <div class="space-y-6">
             <!-- Header + New Store -->
             <div class="no-print bg-white dark:bg-apple-darkCard p-6 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -2886,7 +3112,7 @@
               </div>
             </div>
           </div>
-        </template>
+        </div>
 
       </div>
     </main>
@@ -3498,6 +3724,7 @@
         isSaving: false,
         savingText: '',
         loadingText: '',
+        _memoCache: {},
         showToast: false,
         toastText: '',
         toastType: 'success',
@@ -3569,9 +3796,9 @@
         // Global Settings
         settings: {
           businessName: 'মেসার্স এম আর ট্রেডিং কোল্ড স্টোরেজ',
-          businessSubtitle: 'সকল প্রকার ভউক্তি ও খাতা নাম্না ভাড়া প্রদান হয়',
-          businessAddress: '১৩৫৪ নং আছাদগঞ্জ, হার্ডতিবাট্টি, কোতোয়ালী, চট্টগ্রাম',
-          businessPhones: '০১৮২৯-৪২৩৬৮০, ০১৩১২-৬৪১৯০১, ০১৬৩৪-৫২৮৬৪৬',
+          businessSubtitle: 'সকল প্রকার শুট্কি ও কাঁচা মাছ ভাড়ায় রাখা হয়',
+          businessAddress: '১৩৫৪ নং আছাদগঞ্জ, শুট্কিপট্টি, কোতোয়ালী, চট্টগ্রাম',
+          businessPhones: '০১৮৯২-৪২০৬৮০, ০১৩১২-৬৪৯৩০৫, ০১৮৬৪-৫৮২৬৪৬',
           globalRate: 0.13,
           displayGlobalRate: null,
           chargeBasis: 'closing', // 'closing' or 'opening'
@@ -3580,7 +3807,34 @@
           defaultStoreId: null,
           cloudServerUrl: ADATA_CONFIG.serverUrl,
           cloudAppId: ADATA_CONFIG.appId,
-          cloudApiKey: ADATA_CONFIG.apiKey
+          cloudApiKey: ADATA_CONFIG.apiKey,
+
+          // Print format customizations per document type
+          printConfig: {
+            // 1. Monthly Bill (মাসিক বিল)
+            billBorderWidth: '2px',
+            billTableBorderWidth: '1.5px',
+            billFontWeight: '800',
+            billFontSize: '9px',
+            billTitleSize: '21px',
+
+            // 2. Master Summary Report (মাস্টার সামারি লেজার)
+            masterBorderWidth: '2px',
+            masterTableBorderWidth: '1.5px',
+            masterFontWeight: '800',
+            masterFontSize: '10px',
+            masterTitleSize: '21px',
+
+            // 3. Client Ledger Report (ক্লায়েন্ট লেজার রিপোর্ট)
+            reportBorderWidth: '2px',
+            reportTableBorderWidth: '1.5px',
+            reportFontWeight: '800',
+            reportFontSize: '9px',
+            reportTitleSize: '21px',
+
+            // 4. Global Ink / Contrast
+            deepBlackMode: true
+          }
         },
 
         // Primary Collections
@@ -4203,11 +4457,22 @@
           client.currentStock = { bags: currentBags, kg: currentKg };
           client.runningBalance = runningBalance;
           client.storeStock = storeStock;
+          this.clearMemo();
           this.saveLocalData();
         },
 
         recalculateAllClients() {
           this.clients.forEach(c => this.recalculateClientLedger(c.id));
+          this.clearMemo();
+        },
+
+        clearMemo() { this._memoCache = {}; },
+
+        memo(key, fn) {
+          if (this._memoCache[key] !== undefined) return this._memoCache[key];
+          const val = fn();
+          this._memoCache[key] = val;
+          return val;
         },
 
         // ===== RATE HISTORY & MONTHLY BILL ENGINE =====
@@ -4282,6 +4547,8 @@
         // §8.3 option (খ): build a month's bill with on-demand gap-day rent accrual.
         // Days without a transaction get a synthesized row (closing kg × effective rate).
         buildMonthlyBill(clientId, month) {
+          const cacheKey = 'bill_' + clientId + '_' + month;
+          if (this._memoCache[cacheKey]) return this._memoCache[cacheKey];
           const client = this.clients.find(c => c.id === clientId);
           if (!client) return null;
           const snap = this.snapshots.find(s => s.clientId === clientId && s.month === month);
@@ -4290,6 +4557,7 @@
             // Older snapshots may lack the merged-rate rowspan metadata.
             (snap.rows || []).forEach(r => { if (r.rateSpan === undefined) r.rateSpan = 1; });
             if (snap.laborCharge === undefined) snap.laborCharge = 0;
+            this._memoCache[cacheKey] = snap;
             return snap;
           }
 
@@ -4345,7 +4613,7 @@
             i += span - 1;
           }
 
-          return {
+          const result = {
             clientId,
             month,
             openingStock,
@@ -4359,6 +4627,8 @@
             laborCharge: this.round2(totalDeliveryKg * (this.settings.laborRatePerKg || 0)),
             generatedAt: new Date().toISOString()
           };
+          this._memoCache[cacheKey] = result;
+          return result;
         },
 
         getMonthlyCharge(clientId, month) { return this.buildMonthlyBill(clientId, month)?.totalCharge || 0; },
@@ -5073,6 +5343,13 @@
           return months;
         },
 
+        get dashboardTrend() {
+          const months = this.getTrendMonths();
+          const data = months.map(m => this.getMonthTrendData(m.key));
+          const maxVal = Math.max(...data.map(d => Math.max(d.charge, d.deposit)), 1);
+          return { months, data, maxVal };
+        },
+
         getMonthTrendData(monthKey) {
           const charge = this.getGrandMonthlyRent(monthKey);
           const deposit = this.getGrandTotalDeposit(monthKey);
@@ -5175,6 +5452,17 @@
           }
           return dateStr;
         },
+        getBengaliMonth(dateStr) {
+          if (!dateStr) return '';
+          const bnMonths = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+          const m = parseInt(dateStr.split('-')[1], 10);
+          return bnMonths[m - 1] || '';
+        },
+        getBengaliYear(dateStr) {
+          if (!dateStr) return '';
+          const y = parseInt(dateStr.split('-')[0], 10);
+          return y.toString().replace(/\d/g, d => '০১২৩৪৫৬৭৮৯'[d]);
+        },
 
         // Dedicated print handler for landscape master ledger
         printMasterLedger() {
@@ -5209,6 +5497,76 @@
           } else {
             this.printMasterLedger();
           }
+        },
+
+        // Helper methods for dynamic print & bill styling per document type
+        getBillFrameStyle() {
+          const p = this.settings.printConfig || {};
+          return `--bill-outer-bw: ${p.billBorderWidth || '2px'}; --bill-inner-bw: ${p.billTableBorderWidth || '1.5px'}; --bill-fw: ${p.billFontWeight || '800'}; --bill-fs: ${p.billFontSize || '9px'}; --bill-title-fs: ${p.billTitleSize || '21px'};`;
+        },
+
+        getMasterReportStyle() {
+          const p = this.settings.printConfig || {};
+          return `--master-outer-bw: ${p.masterBorderWidth || '2px'}; --master-inner-bw: ${p.masterTableBorderWidth || '1.5px'}; --master-fw: ${p.masterFontWeight || '800'}; --master-fs: ${p.masterFontSize || '10px'}; --master-title-fs: ${p.masterTitleSize || '21px'};`;
+        },
+
+        getClientReportStyle() {
+          const p = this.settings.printConfig || {};
+          return `--bill-outer-bw: ${p.reportBorderWidth || '2px'}; --bill-inner-bw: ${p.reportTableBorderWidth || '1.5px'}; --bill-fw: ${p.reportFontWeight || '800'}; --bill-fs: ${p.reportFontSize || '9px'}; --bill-title-fs: ${p.reportTitleSize || '21px'}; --master-outer-bw: ${p.reportBorderWidth || '2px'}; --master-inner-bw: ${p.reportTableBorderWidth || '1.5px'}; --master-fw: ${p.reportFontWeight || '800'}; --master-fs: ${p.reportFontSize || '10px'}; --master-title-fs: ${p.reportTitleSize || '21px'};`;
+        },
+
+        applyPrintPreset(preset) {
+          if (!this.settings.printConfig) this.settings.printConfig = {};
+          if (preset === 'dark_bold') {
+            this.settings.printConfig.billBorderWidth = '2px';
+            this.settings.printConfig.billTableBorderWidth = '1.5px';
+            this.settings.printConfig.billFontWeight = '800';
+            this.settings.printConfig.billFontSize = '9px';
+            this.settings.printConfig.billTitleSize = '21px';
+            this.settings.printConfig.masterBorderWidth = '2px';
+            this.settings.printConfig.masterTableBorderWidth = '1.5px';
+            this.settings.printConfig.masterFontWeight = '800';
+            this.settings.printConfig.masterFontSize = '10px';
+            this.settings.printConfig.masterTitleSize = '21px';
+            this.settings.printConfig.reportBorderWidth = '2px';
+            this.settings.printConfig.reportTableBorderWidth = '1.5px';
+            this.settings.printConfig.reportFontWeight = '800';
+            this.settings.printConfig.reportFontSize = '9px';
+            this.settings.printConfig.reportTitleSize = '21px';
+          } else if (preset === 'extra_heavy') {
+            this.settings.printConfig.billBorderWidth = '2.5px';
+            this.settings.printConfig.billTableBorderWidth = '2px';
+            this.settings.printConfig.billFontWeight = '900';
+            this.settings.printConfig.billFontSize = '9.5px';
+            this.settings.printConfig.billTitleSize = '24px';
+            this.settings.printConfig.masterBorderWidth = '2.5px';
+            this.settings.printConfig.masterTableBorderWidth = '2px';
+            this.settings.printConfig.masterFontWeight = '900';
+            this.settings.printConfig.masterFontSize = '10.5px';
+            this.settings.printConfig.masterTitleSize = '24px';
+            this.settings.printConfig.reportBorderWidth = '2.5px';
+            this.settings.printConfig.reportTableBorderWidth = '2px';
+            this.settings.printConfig.reportFontWeight = '900';
+            this.settings.printConfig.reportFontSize = '9.5px';
+            this.settings.printConfig.reportTitleSize = '24px';
+          } else if (preset === 'standard') {
+            this.settings.printConfig.billBorderWidth = '1px';
+            this.settings.printConfig.billTableBorderWidth = '1px';
+            this.settings.printConfig.billFontWeight = '600';
+            this.settings.printConfig.billFontSize = '8.5px';
+            this.settings.printConfig.billTitleSize = '18px';
+            this.settings.printConfig.masterBorderWidth = '1px';
+            this.settings.printConfig.masterTableBorderWidth = '1px';
+            this.settings.printConfig.masterFontWeight = '600';
+            this.settings.printConfig.masterFontSize = '9.5px';
+            this.settings.printConfig.masterTitleSize = '18px';
+            this.settings.printConfig.reportBorderWidth = '1px';
+            this.settings.printConfig.reportTableBorderWidth = '1px';
+            this.settings.printConfig.reportFontWeight = '600';
+            this.settings.printConfig.reportFontSize = '8.5px';
+            this.settings.printConfig.reportTitleSize = '18px';
+          }
+          this.saveSettings();
         },
 
         // Settings & Storage Persistence (cloud-only — no localStorage)
@@ -5564,6 +5922,10 @@
             ['businessName', 'businessSubtitle', 'businessAddress', 'businessPhones', 'globalRate', 'chargeBasis', 'laborRatePerKg', 'pinCode', 'defaultStoreId'].forEach(k => {
               if (srv[k] !== undefined) applied[k] = srv[k];
             });
+            // Deep merge printConfig so server values reach the client
+            if (srv.printConfig && typeof srv.printConfig === 'object') {
+              applied.printConfig = Object.assign({}, applied.printConfig || {}, srv.printConfig);
+            }
             applied._cloudId = srv.id;
             applied.updatedAt = srv.updatedAt || Date.now();
             this.settings = applied;
@@ -5648,9 +6010,13 @@
           const su = Number(srv.updatedAt || 0);
           if (su > lu) {
             const applied = Object.assign({}, this.settings);
-            ['businessName', 'businessSubtitle', 'businessAddress', 'businessPhones', 'globalRate', 'chargeBasis', 'laborRatePerKg', 'pinCode'].forEach(k => {
+            ['businessName', 'businessSubtitle', 'businessAddress', 'businessPhones', 'globalRate', 'chargeBasis', 'laborRatePerKg', 'pinCode', 'defaultStoreId'].forEach(k => {
               if (srv[k] !== undefined) applied[k] = srv[k];
             });
+            // Deep merge printConfig so both local and server values are preserved
+            if (srv.printConfig && typeof srv.printConfig === 'object') {
+              applied.printConfig = Object.assign({}, applied.printConfig || {}, srv.printConfig);
+            }
             applied._cloudId = srv.id;
             applied.updatedAt = srv.updatedAt || Date.now();
             this.settings = applied;
