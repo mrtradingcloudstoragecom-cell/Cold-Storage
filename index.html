@@ -918,12 +918,21 @@
             <div class="bg-white dark:bg-apple-darkCard p-6 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm space-y-4">
               <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex-1 max-w-md">
-                  <label class="block text-xs font-medium text-apple-secondary mb-1">ক্লায়েন্ট নির্বাচন করুন:</label>
-                  <select x-model="selectedClientId" @change="onClientChange()" class="w-full text-sm font-semibold p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-apple-blue">
-                    <template x-for="c in clients" :key="c.id">
-                      <option :value="c.id" x-text="'[' + c.clientId + '] ' + c.name + ' (' + c.mobile + ')'"></option>
-                    </template>
-                  </select>
+                  <label class="block text-xs font-medium text-apple-secondary mb-1">ক্লায়েন্ট নির্বাচন করুন (আইডি/নাম লিখে Enter):</label>
+                  <div class="relative">
+                    <input type="text" x-model="clientSearchText" @input="onClientSearchInput()" @focus="onClientSearchInput()" @keydown.enter.prevent="selectClientBySearch()" @keydown.down.prevent="clientSearchMove(1)" @keydown.up.prevent="clientSearchMove(-1)" @keydown.escape="clientSearchShow = false" @blur="setTimeout(() => clientSearchShow = false, 150)" placeholder="ক্লায়েন্ট আইডি / নাম লিখুন..." class="w-full text-sm font-semibold p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-apple-blue">
+                    <div x-show="clientSearchShow && clientSearchFiltered.length" class="absolute z-30 top-full left-0 right-0 mt-1 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-56 overflow-y-auto">
+                      <template x-for="(c, ci) in clientSearchFiltered" :key="c.id">
+                        <div @mousedown.prevent="selectClientById(c.id)" @mouseenter="clientSearchActive = ci" class="px-3 py-2 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-0" :class="ci === clientSearchActive ? 'bg-apple-blue/10' : 'hover:bg-gray-50 dark:hover:bg-zinc-700'">
+                          <div class="flex justify-between items-center">
+                            <span class="font-bold text-apple-blue text-xs" x-text="'ID:' + c.clientId"></span>
+                            <span class="text-[10px] bg-gray-100 dark:bg-zinc-700 px-1.5 py-0.5 rounded font-semibold" x-text="c.currentStock.bags + ' বস্তা / ' + c.currentStock.kg + ' kg'"></span>
+                          </div>
+                          <div class="text-xs font-medium truncate" x-text="c.name"></div>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
                 </div>
 
                 <div x-show="currentClient" class="flex items-center space-x-2">
@@ -983,6 +992,7 @@
                       <th class="py-3 px-3 text-right">দিনের ভাড়া (৳)</th>
                       <th class="py-3 px-3 text-right">জমা (৳)</th>
                       <th class="py-3 px-3 text-right">বর্তমান টাকা (৳)</th>
+                      <th class="py-3 px-3 text-center">চালান নম্বর</th>
                       <th class="py-3 px-3 text-center">অ্যাকশন</th>
                     </tr>
                   </thead>
@@ -1025,6 +1035,19 @@
                         </td>
                         <!-- Running Balance -->
                         <td class="py-3 px-3 text-right font-bold" :class="row.runningBalance > 0 ? 'text-apple-red' : 'text-apple-green'" x-text="formatMoney(row.runningBalance)"></td>
+                        <!-- Challan No -->
+                        <td class="py-3 px-3 text-center">
+                          <template x-if="editingLedgerDateId === row.id">
+                            <input type="text" x-model="ledgerEditForm.challanNo" placeholder="চালান #" class="w-24 px-1 py-0.5 border rounded border-gray-300 dark:border-gray-700 bg-white dark:bg-zinc-800 text-[11px] text-center">
+                          </template>
+                          <template x-if="editingLedgerDateId !== row.id">
+                            <span class="inline-flex items-center gap-0.5" x-show="row.challanNo">
+                              <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                              <span class="font-semibold text-amber-700 dark:text-amber-400" x-text="row.challanNo"></span>
+                            </span>
+                            <span x-show="!row.challanNo" class="text-gray-300 dark:text-gray-600">-</span>
+                          </template>
+                        </td>
                         <!-- Action -->
                         <td class="py-3 px-3 text-center space-x-1 whitespace-nowrap">
                           <template x-if="editingLedgerDateId === row.id">
@@ -1049,7 +1072,7 @@
                       </tr>
                     </template>
                     <tr x-show="currentLedgerEntries.length === 0">
-                      <td colspan="9" class="py-12 text-center text-apple-secondary">এই ক্লায়েন্টের কোনো লেনদেন তথ্য নেই</td>
+                      <td colspan="10" class="py-12 text-center text-apple-secondary">এই ক্লায়েন্টের কোনো লেনদেন তথ্য নেই</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1455,11 +1478,11 @@
                         <!-- আইডি - searchable input -->
                         <td class="py-2 px-2">
                           <div class="relative">
-                            <input type="text" x-model="item.clientCode" @input="onBulkIdInput(item)" @focus="onBulkIdInput(item)" @blur="onBulkIdBlur(item)" :class="item._idError ? 'border-red-500 bg-red-50' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800'" placeholder="ID" class="w-full p-1.5 text-center font-bold text-apple-blue border rounded-lg text-[11px] focus:outline-none focus:ring-2 focus:ring-apple-blue/30">
+                            <input type="text" x-model="item.clientCode" @input="onBulkIdInput(item)" @focus="onBulkIdInput(item)" @blur="onBulkIdBlur(item)" @keydown.down="bulkIdArrow(item, 1); $event.preventDefault()" @keydown.up="bulkIdArrow(item, -1); $event.preventDefault()" @keydown.enter.prevent="bulkCellEnter(item, 'clientCode')" :id="'bulk-cell-' + item.uid + '-clientCode'" :class="item._idError ? 'border-red-500 bg-red-50' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800'" placeholder="ID" class="w-full p-1.5 text-center font-bold text-apple-blue border rounded-lg text-[11px] focus:outline-none focus:ring-2 focus:ring-apple-blue/30">
                             <!-- Dropdown -->
                             <div x-show="item.showSuggest && item.filtered.length" class="absolute z-20 top-full left-0 mt-1 w-72 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-52 overflow-y-auto">
-                              <template x-for="c in item.filtered" :key="c.id">
-                                <div @mousedown.prevent="selectBulkClient(item, c)" class="px-3 py-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-0">
+                              <template x-for="(c, ci) in item.filtered" :key="c.id">
+                                <div @mousedown.prevent="selectBulkClient(item, c)" @mouseenter="item._sP = ci" :class="item._sP === ci ? 'bg-amber-50 dark:bg-amber-900/20' : 'hover:bg-amber-50 dark:hover:bg-amber-900/20'" class="px-3 py-2 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-0">
                                   <div class="flex justify-between items-center">
                                     <span class="font-bold text-apple-blue text-xs" x-text="'ID:' + c.clientId"></span>
                                     <span class="text-[10px] bg-gray-100 dark:bg-zinc-700 px-1.5 py-0.5 rounded font-semibold" x-text="c.currentStock.bags + ' বস্তা / ' + c.currentStock.kg + ' kg'"></span>
@@ -1477,11 +1500,11 @@
                         <td class="py-2 px-2 text-apple-secondary truncate max-w-[140px]" :title="item.address" x-text="item.address || '-'"></td>
                         <!-- স্টক ইন বস্তা -->
                         <td class="py-2 px-1">
-                          <input type="number" min="0" x-model.number="item.inBags" placeholder="0" class="w-14 p-1.5 text-center border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700">
+                          <input type="number" min="0" x-model.number="item.inBags" placeholder="0" :id="'bulk-cell-' + item.uid + '-inBags'" @keydown.arrow-left.prevent="bulkCellMove(item,'inBags',-1,0)" @keydown.arrow-right.prevent="bulkCellMove(item,'inBags',1,0)" @keydown.arrow-up.prevent="bulkCellMove(item,'inBags',0,-1)" @keydown.arrow-down.prevent="bulkCellMove(item,'inBags',0,1)" @keydown.enter.prevent="bulkCellEnter(item,'inBags')" class="w-14 p-1.5 text-center border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700">
                         </td>
                         <!-- স্টক ইন কেজি -->
                         <td class="py-2 px-1">
-                          <input type="number" min="0" step="0.01" x-model.number="item.inKg" placeholder="0" class="w-20 p-1.5 text-center border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700">
+                          <input type="number" min="0" step="0.01" x-model.number="item.inKg" placeholder="0" :id="'bulk-cell-' + item.uid + '-inKg'" @keydown.arrow-left.prevent="bulkCellMove(item,'inKg',-1,0)" @keydown.arrow-right.prevent="bulkCellMove(item,'inKg',1,0)" @keydown.arrow-up.prevent="bulkCellMove(item,'inKg',0,-1)" @keydown.arrow-down.prevent="bulkCellMove(item,'inKg',0,1)" @keydown.enter.prevent="bulkCellEnter(item,'inKg')" class="w-20 p-1.5 text-center border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700">
                         </td>
                         <!-- স্টক বস্তা (display) -->
                         <td class="py-2 px-1 text-center font-semibold bg-gray-50 dark:bg-zinc-800/50 rounded" x-text="item.prevBags"></td>
@@ -1489,15 +1512,15 @@
                         <td class="py-2 px-1 text-center font-semibold bg-gray-50 dark:bg-zinc-800/50 rounded" x-text="item.prevKg"></td>
                         <!-- ডেলিভারি বস্তা -->
                         <td class="py-2 px-1">
-                          <input type="number" min="0" x-model.number="item.outBags" placeholder="0" class="w-14 p-1.5 text-center border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700">
+                          <input type="number" min="0" x-model.number="item.outBags" placeholder="0" :id="'bulk-cell-' + item.uid + '-outBags'" @keydown.arrow-left.prevent="bulkCellMove(item,'outBags',-1,0)" @keydown.arrow-right.prevent="bulkCellMove(item,'outBags',1,0)" @keydown.arrow-up.prevent="bulkCellMove(item,'outBags',0,-1)" @keydown.arrow-down.prevent="bulkCellMove(item,'outBags',0,1)" @keydown.enter.prevent="bulkCellEnter(item,'outBags')" class="w-14 p-1.5 text-center border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700">
                         </td>
                         <!-- ডেলিভারি কেজি -->
                         <td class="py-2 px-1">
-                          <input type="number" min="0" step="0.01" x-model.number="item.outKg" placeholder="0" class="w-20 p-1.5 text-center border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700">
+                          <input type="number" min="0" step="0.01" x-model.number="item.outKg" placeholder="0" :id="'bulk-cell-' + item.uid + '-outKg'" @keydown.arrow-left.prevent="bulkCellMove(item,'outKg',-1,0)" @keydown.arrow-right.prevent="bulkCellMove(item,'outKg',1,0)" @keydown.arrow-up.prevent="bulkCellMove(item,'outKg',0,-1)" @keydown.arrow-down.prevent="bulkCellMove(item,'outKg',0,1)" @keydown.enter.prevent="bulkCellEnter(item,'outKg')" class="w-20 p-1.5 text-center border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700">
                         </td>
                         <!-- স্টোর -->
                         <td class="py-2 px-2">
-                          <select x-model="item.storeId" class="w-full p-1.5 rounded-lg border bg-gray-50 dark:bg-zinc-800 border-gray-200 dark:border-gray-700 text-[11px]">
+                          <select x-model="item.storeId" :id="'bulk-cell-' + item.uid + '-storeId'" @keydown.arrow-left.prevent="bulkCellMove(item,'storeId',-1,0)" @keydown.arrow-right.prevent="bulkCellMove(item,'storeId',1,0)" @keydown.arrow-up.prevent="bulkCellMove(item,'storeId',0,-1)" @keydown.arrow-down.prevent="bulkCellMove(item,'storeId',0,1)" @keydown.enter.prevent="bulkCellMove(item,'storeId',1,0)" class="w-full p-1.5 rounded-lg border bg-gray-50 dark:bg-zinc-800 border-gray-200 dark:border-gray-700 text-[11px]">
                             <template x-for="s in stores" :key="s.id">
                               <option :value="s.id" x-text="s.name"></option>
                             </template>
@@ -1505,7 +1528,7 @@
                         </td>
                         <!-- চালান নম্বর -->
                         <td class="py-2 px-2">
-                          <input type="text" x-model="item.challanNo" @input="onChallanInput(item)" placeholder="চালান" class="w-full p-1.5 text-center border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700 text-[11px]">
+                          <input type="text" x-model="item.challanNo" @input="onChallanInput(item)" :id="'bulk-cell-' + item.uid + '-challanNo'" @keydown.arrow-left.prevent="bulkCellMove(item,'challanNo',-1,0)" @keydown.arrow-right.prevent="bulkCellMove(item,'challanNo',1,0)" @keydown.arrow-up.prevent="bulkCellMove(item,'challanNo',0,-1)" @keydown.arrow-down.prevent="bulkCellMove(item,'challanNo',0,1)" @keydown.enter.prevent="bulkCellMove(item,'challanNo',1,0)" placeholder="চালান" class="w-full p-1.5 text-center border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700 text-[11px]">
                         </td>
                         <td class="py-2 px-1 text-center">
                           <button @click="removeBulkRow(item.uid)" class="w-7 h-7 rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 hover:bg-red-100 flex items-center justify-center text-xs">×</button>
@@ -2646,7 +2669,7 @@
                           <td class="py-1" :style="getCellBorderStyle('sum-b0')" @mousemove="hoverLine($event,'sum-b0')" @mouseleave="hoverClear()" data-cell="sum-b0" @click="handleCellBorderClick($event,'sum-b0')" x-text="enNum(currentBill.closingStock.bags)"></td>
                           <td class="py-1" :style="getCellBorderStyle('sum-b1')" @mousemove="hoverLine($event,'sum-b1')" @mouseleave="hoverClear()" data-cell="sum-b1" @click="handleCellBorderClick($event,'sum-b1')" x-text="enNum(currentBill.closingStock.kg)"></td>
                           <td class="py-1 px-2 bill-money" :style="getCellBorderStyle('sum-b2')" @mousemove="hoverLine($event,'sum-b2')" @mouseleave="hoverClear()" data-cell="sum-b2" @click="handleCellBorderClick($event,'sum-b2')" x-text="'৳ ' + enMoneyRounded(currentBill.totalCharge)"></td>
-                           <td class="py-1 px-2 bill-money" :style="getCellBorderStyle('sum-b3')" @mousemove="hoverLine($event,'sum-b3')" @mouseleave="hoverClear()" data-cell="sum-b3" @click="handleCellBorderClick($event,'sum-b3')" x-text="'৳ ' + enMoneyRounded(currentBill.monthlyCharge || 0)"></td>
+                           <td class="py-1 px-2 bill-money" :style="getCellBorderStyle('sum-b3')" @mousemove="hoverLine($event,'sum-b3')" @mouseleave="hoverClear()" data-cell="sum-b3" @click="handleCellBorderClick($event,'sum-b3')" x-text="'৳ 0'"></td>
                            <td class="py-1 px-2 text-left bill-money font-bold" :style="getCellBorderStyle('sum-b4')" @mousemove="hoverLine($event,'sum-b4')" @mouseleave="hoverClear()" data-cell="sum-b4" @click="handleCellBorderClick($event,'sum-b4')" x-text="'৳ ' + enMoneyRounded(currentBill.closingBalance)"></td>
                         </tr>
                       </tbody>
@@ -4426,49 +4449,49 @@
         <button @click="showClientModal = false" class="p-1 text-gray-400 hover:text-gray-600">&times;</button>
       </div>
 
-      <form @submit.prevent="saveClient()" class="flex flex-col min-h-0 flex-1">
+      <form @submit.prevent="saveClient()" x-ref="clientForm" class="flex flex-col min-h-0 flex-1">
         <div class="space-y-3 text-xs overflow-y-auto px-6 py-4">
         <div>
           <label class="block text-apple-secondary mb-1">ক্লায়েন্ট আইডি / কোড (*):</label>
-          <input type="text" x-model="clientForm.clientId" required class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 font-bold">
+          <input type="text" x-model="clientForm.clientId" required x-ref="cf0" @keydown.enter.prevent="clientFieldEnter(0)" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 font-bold">
         </div>
         <div>
           <label class="block text-apple-secondary mb-1">ক্লায়েন্টের নাম (*):</label>
-          <input type="text" x-model="clientForm.name" required class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 font-semibold">
+          <input type="text" x-model="clientForm.name" required x-ref="cf1" @keydown.enter.prevent="clientFieldEnter(1)" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 font-semibold">
         </div>
         <div>
           <label class="block text-apple-secondary mb-1">ঠিকানা / মারফতঃ</label>
-          <input type="text" x-model="clientForm.address" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800">
+          <input type="text" x-model="clientForm.address" x-ref="cf2" @keydown.enter.prevent="clientFieldEnter(2)" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800">
         </div>
         <div>
           <label class="block text-apple-secondary mb-1">মোবাইল নম্বর:</label>
-          <input type="text" x-model="clientForm.mobile" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800">
+          <input type="text" x-model="clientForm.mobile" x-ref="cf3" @keydown.enter.prevent="clientFieldEnter(3)" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800">
         </div>
 
         <div class="grid grid-cols-2 gap-3 pt-2 border-t dark:border-gray-800">
           <div>
             <label class="block text-apple-secondary mb-1">সাবেক বস্তা:</label>
-            <input type="number" min="0" x-model.number="clientForm.openingBags" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800">
+            <input type="number" min="0" x-model.number="clientForm.openingBags" x-ref="cf4" @keydown.enter.prevent="clientFieldEnter(4)" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800">
           </div>
           <div>
             <label class="block text-apple-secondary mb-1">সাবেক কেজি:</label>
-            <input type="number" min="0" step="0.01" x-model.number="clientForm.openingKg" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800">
+            <input type="number" min="0" step="0.01" x-model.number="clientForm.openingKg" x-ref="cf5" @keydown.enter.prevent="clientFieldEnter(5)" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800">
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-apple-secondary mb-1">সাবেক বকেয়া টাকা (৳):</label>
-            <input type="number" step="0.01" x-model.number="clientForm.openingBalance" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 font-bold text-apple-red">
+            <input type="number" step="0.01" x-model.number="clientForm.openingBalance" x-ref="cf6" @keydown.enter.prevent="clientFieldEnter(6)" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 font-bold text-apple-red">
           </div>
           <div class="space-y-3">
             <div>
               <label class="block text-apple-secondary mb-1">দেখানোর দর (বিলে যেটা দেখাবে):</label>
-              <input type="number" step="0.01" x-model.number="clientForm.displayRatePerKgPerDay" placeholder="0.13" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800">
+              <input type="number" step="0.01" x-model.number="clientForm.displayRatePerKgPerDay" placeholder="0.13" x-ref="cf7" @keydown.enter.prevent="clientFieldEnter(7)" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800">
             </div>
             <div>
               <label class="block text-apple-secondary mb-1">হিসাবের দর (আসল গুণ হবে এতে):</label>
-              <input type="number" step="0.01" x-model.number="clientForm.ratePerKgPerDay" placeholder="0.13" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 font-bold text-apple-blue">
+              <input type="number" step="0.01" x-model.number="clientForm.ratePerKgPerDay" placeholder="0.13" x-ref="cf8" @keydown.enter.prevent="clientFieldEnter(8)" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 font-bold text-apple-blue">
             </div>
           </div>
         </div>
@@ -4538,7 +4561,7 @@
 
         <div class="pt-4 px-6 py-4 border-t dark:border-gray-800 flex justify-end space-x-2 shrink-0">
           <button type="button" @click="showClientModal = false" class="px-4 py-2 bg-gray-100 dark:bg-zinc-800 text-xs rounded-xl font-medium">বাতিল</button>
-          <button type="submit" :disabled="isSaving" :class="isSaving ? 'btn-loading' : ''" class="px-5 py-2 bg-apple-blue text-white text-xs rounded-xl font-medium hover:bg-blue-600 shadow-sm">
+          <button type="submit" x-ref="cf9" :disabled="isSaving" :class="isSaving ? 'btn-loading' : ''" class="px-5 py-2 bg-apple-blue text-white text-xs rounded-xl font-medium hover:bg-blue-600 shadow-sm">
             <span x-show="!isSaving">সংরক্ষণ করুন</span>
             <span x-show="isSaving" class="flex items-center gap-1.5"><span class="spinner" style="width:12px;height:12px;border-width:1.5px;"></span> সেভ হচ্ছে...</span>
           </button>
@@ -5072,6 +5095,9 @@
 
         // Data Models
         selectedClientId: null,
+        clientSearchText: null,
+        clientSearchShow: false,
+        clientSearchActive: 0,
         selectedBillMonth: new Date().toISOString().slice(0, 7), // "YYYY-MM"
         showBatchPrint: false,
         batchSelectedClients: [],
@@ -5119,7 +5145,7 @@
         paymentHistorySearch: '',
         editingLedgerDateId: null,
         ledgerDateEdit: '',
-        ledgerEditForm: { date: '', inBags: 0, inKg: 0, outBags: 0, outKg: 0, deposit: 0 },
+        ledgerEditForm: { date: '', inBags: 0, inKg: 0, outBags: 0, outKg: 0, deposit: 0, challanNo: '' },
         paymentHistoryDate: '',
         editingPaymentRowId: null,
         paymentRowEdit: { clientId: '', date: '', amount: 0, kaifiyat: 0, charge: 0, note: '' },
@@ -5351,6 +5377,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           } else {
             this.selectedClientId = this.clients[0].id;
           }
+          this.syncClientSearchText();
           this.initBillLayout();
           this.initMasterLayout();
           this.initMasterSummaryLayout();
@@ -6292,6 +6319,9 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           if (monthlyCharge) {
             totalCharge = this.round2(totalCharge + monthlyCharge);
             bal = this.round2(bal + monthlyCharge);
+            // সর্বশেষ ডে-রোর "বর্তমান টাকা"-ও চার্জসহ করি যাতে বিলের শেষ সারির ব্যালেন্স
+            // সামারি বক্সের "মোট বিল" (closingBalance)-এর সাথে হুবহু মেলে।
+            if (rows.length) rows[rows.length - 1].runningBalance = this.round2(bal);
           }
 
           // Merge identical consecutive displayed rates into one cell (rowspan).
@@ -6545,6 +6575,14 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
         },
 
         // Client Management Functions
+        clientFieldEnter(i) {
+          const next = this.$refs['cf' + (i + 1)];
+          if (next) {
+            next.focus();
+            if (next.select) next.select();
+          }
+        },
+
         openClientModal(client = null) {
           if (!this.requirePerm('clients')) return;
           if (client) {
@@ -6644,15 +6682,68 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           this.openClientModal(client);
         },
 
-        selectClient(clientId) {
+selectClient(clientId) {
           this.selectedClientId = clientId;
+          this.syncClientSearchText();
+        },
+
+        syncClientSearchText() {
+          const c = this.selectedClientId ? this.clients.find(x => x.id === this.selectedClientId) : null;
+          this.clientSearchText = c ? ('[' + c.clientId + '] ' + c.name + (c.mobile ? ' (' + c.mobile + ')' : '')) : null;
         },
 
         onClientChange() {
           // Handled via reactivity
         },
 
-        // Ledger Entry Functions
+        get clientSearchFiltered() {
+          const q = (this.clientSearchText || '').trim().toLowerCase();
+          let list = this.clients;
+          if (q) {
+            list = list.filter(c =>
+              String(c.clientId).toLowerCase().includes(q) ||
+              (c.name || '').toLowerCase().includes(q) ||
+              (c.address || '').toLowerCase().includes(q)
+            );
+            list = list.slice().sort((a, b) => {
+              const aId = String(a.clientId).toLowerCase();
+              const bId = String(b.clientId).toLowerCase();
+              const aExact = aId === q ? 0 : (aId.startsWith(q) ? 1 : 2);
+              const bExact = bId === q ? 0 : (bId.startsWith(q) ? 1 : 2);
+              return aExact - bExact;
+            });
+          }
+          return list.slice(0, 12);
+        },
+
+        onClientSearchInput() {
+          this.clientSearchShow = true;
+          this.clientSearchActive = 0;
+          if (!this.clientSearchText) this.clientSearchText = '';
+        },
+
+        clientSearchMove(dir) {
+          const n = this.clientSearchFiltered.length;
+          if (!n) return;
+          this.clientSearchShow = true;
+          this.clientSearchActive = (this.clientSearchActive + dir + n) % n;
+        },
+
+        selectClientBySearch() {
+          const list = this.clientSearchFiltered;
+          if (!list.length) return;
+          const idx = Math.min(this.clientSearchActive, list.length - 1);
+          this.selectClientById(list[idx].id);
+        },
+
+        selectClientById(clientId) {
+          const c = this.clients.find(x => x.id === clientId);
+          if (!c) return;
+          this.selectedClientId = clientId;
+          this.clientSearchText = '[' + c.clientId + '] ' + c.name + (c.mobile ? ' (' + c.mobile + ')' : '');
+          this.clientSearchShow = false;
+        },
+
         openEntryModal() {
           if (!this.requirePerm('client-ledger')) return;
           const existing = this.selectedClientId ? this.ledgerEntries.find(e => e.clientId === this.selectedClientId && e.date === this.todayStr()) : null;
@@ -6711,7 +6802,8 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
             inKg: Number(entry.stockIn?.kg || 0),
             outBags: Number(entry.delivery?.bags || 0),
             outKg: Number(entry.delivery?.kg || 0),
-            deposit: Number(entry.deposit || 0)
+            deposit: Number(entry.deposit || 0),
+            challanNo: entry.challanNo || ''
           };
         },
 
@@ -6737,12 +6829,22 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           entry.stockIn = { bags: Number(f.inBags) || 0, kg: Number(f.inKg) || 0, storeId: entry.stockIn?.storeId || this.getDefaultStoreId() };
           entry.delivery = { bags: Number(f.outBags) || 0, kg: Number(f.outKg) || 0, storeId: entry.delivery?.storeId || this.getDefaultStoreId() };
           entry.deposit = Number(f.deposit) || 0;
+          entry.challanNo = (f.challanNo || '').trim();
           // ক্রস-সিঙ্ক (দুই দিক): লেজার থেকে জমা এডিট করলে তা জমা-রেজিস্টার (payments) ও
           // দৈনিক আয়-খরচেও অটো আপডেট হয়, যেন সেভ-হওয়া জমা/দৈনিক আয়-খরচ/লেজার সব মিলে থাকে।
           if (oldDate !== newDate && this.getFilteredSavedPayments) {
             const oldPay = this.payments.find(p => p.clientId === entry.clientId && p.date === oldDate && !this.isTransferMethod(p));
             if (oldPay) { oldPay.date = newDate; oldPay.updatedAt = Date.now(); this.enqueueRecordSync('payments', oldPay); }
           }
+          // পুরনো তারিখে চালান রেকর্ড ছিল → নতুন তারিখ/নম্বরে সিঙ্ক
+          if (oldDate !== newDate) {
+            const oldRec = this.challanRecords.find(r => r.clientId === entry.clientId && r.date === oldDate);
+            if (oldRec) {
+              this.challanRecords = this.challanRecords.filter(r => r.id !== oldRec.id);
+              if (oldRec._cloudId && this.cloudQueue) this.cloudQueue.enqueue({ op: 'delete', collection: 'challan_records', id: oldRec._cloudId });
+            }
+          }
+          this.syncChallanForLedger(entry.clientId, entry.date, entry.challanNo);
           const pay = this.payments.find(p => p.clientId === entry.clientId && p.date === newDate && !this.isTransferMethod(p));
           const kai = pay ? (Number(pay.kaifiyat) || 0) : 0;
           const amount = Math.max(0, Math.round((entry.deposit - kai) * 100) / 100);
@@ -6763,6 +6865,13 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
             this.ledgerEntries = this.ledgerEntries.filter(e => e.id !== entryId);
             if (entry && entry._cloudId && this.cloudQueue) {
               this.cloudQueue.enqueue({ op: 'delete', collection: 'ledger_entries', id: entry._cloudId });
+            }
+            if (entry) {
+              const recs = this.challanRecords.filter(r => r.clientId === entry.clientId && r.date === entry.date);
+              recs.forEach(r => {
+                this.challanRecords = this.challanRecords.filter(x => x.id !== r.id);
+                if (r._cloudId && this.cloudQueue) this.cloudQueue.enqueue({ op: 'delete', collection: 'challan_records', id: r._cloudId });
+              });
             }
             this.recalculateClientLedger(this.selectedClientId);
           }
@@ -7148,7 +7257,8 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
             outKg: 0,
             challanNo: '',
             showSuggest: false,
-            filtered: []
+            filtered: [],
+            _sP: 0
           };
         },
 
@@ -7213,6 +7323,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
             (c.mobile || '').includes(q)
           ).slice(0, 8);
           row.showSuggest = row.filtered.length > 0;
+          row._sP = 0;
           // if exact ID match, auto-select? keep suggest open for confirmation
         },
 
@@ -7253,6 +7364,86 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           }, 180);
         },
 
+        // ===== বাল্ক কীবোর্ড নেভিগেশন (Directional Keys) =====
+        bulkNavFields: ['clientCode', 'inBags', 'inKg', 'outBags', 'outKg', 'storeId', 'challanNo'],
+
+        focusBulkCell(uid, field) {
+          const el = document.getElementById('bulk-cell-' + uid + '-' + field);
+          if (el) { el.focus(); if (el.select) el.select(); }
+        },
+
+        bulkRowIndex(item) { return this.bulkRows.findIndex(r => r.uid === item.uid); },
+
+        bulkCellMove(item, field, dc, dr) {
+          const fields = this.bulkNavFields;
+          let fi = fields.indexOf(field);
+          let ri = this.bulkRowIndex(item);
+          if (ri < 0 || fi < 0) return;
+          if (dr !== 0) {
+            // উল্লম্ব: একই ঘর, আগের/পরের সারি
+            let tr = ri + dr;
+            if (tr >= this.bulkRows.length) { this.addBulkRow(); tr = this.bulkRows.length - 1; }
+            if (tr < 0) return;
+            this.focusBulkCell(this.bulkRows[tr].uid, field);
+            return;
+          }
+          // অনুভূমিক
+          let nfi = fi + dc;
+          if (nfi < 0) {
+            // আগের সারির চালান নম্বরে
+            if (ri > 0) this.focusBulkCell(this.bulkRows[ri - 1].uid, 'challanNo');
+            return;
+          }
+          if (nfi >= fields.length) {
+            // পরের সারির আইডিতে (শেষ সারি হলে নতুন সারি)
+            if (ri === this.bulkRows.length - 1) this.addBulkRow();
+            const tr = Math.min(ri + 1, this.bulkRows.length - 1);
+            this.focusBulkCell(this.bulkRows[tr].uid, 'clientCode');
+            return;
+          }
+          this.focusBulkCell(item.uid, fields[nfi]);
+        },
+
+        bulkCellEnter(item, field) {
+          if (field === 'clientCode') { this.selectBulkClientFromCode(item, true); return; }
+          this.bulkCellMove(item, field, 1, 0);
+        },
+
+        // আইডি ঘরে ↑/↓ দিলে সাজেশন ড্রপডাউনের হাইলাইট ঘুরবে
+        bulkIdArrow(item, dir) {
+          if (!item.clientCode || !item.clientCode.trim()) { this.onBulkIdInput(item); return; }
+          if (!item.showSuggest) this.onBulkIdInput(item);
+          const n = (item.filtered || []).length;
+          if (!n) return;
+          item._sP = ((item._sP ?? 0) + dir) % n;
+          if (item._sP < 0) item._sP += n;
+          item.showSuggest = true;
+        },
+
+        // আইডি Enter: ঠিক মিল বা হাইলাইট করা সাজেশন সিলেক্ট করে স্টক ইন বস্তায় চলে যায়
+        selectBulkClientFromCode(item, goNext = true) {
+          const q = (item.clientCode || '').toString().trim();
+          item.showSuggest = false;
+          if (!q) { item._idError = true; setTimeout(()=>{ item._idError=false; }, 2000); return; }
+          let match = this.clients.find(c => c.clientId.toString().toLowerCase() === q.toLowerCase());
+          if (!match) {
+            const list = this.clients.filter(c =>
+              c.clientId.toString().toLowerCase().includes(q) ||
+              c.name.toLowerCase().includes(q) ||
+              (c.mobile || '').includes(q)
+            );
+            if (list.length) match = list[Math.min(item._sP ?? 0, list.length - 1)];
+          }
+          if (!match) {
+            item._idError = true;
+            this.showToast('ভুল ID: ' + q + ' — ক্লায়েন্ট পাওয়া যায়নি', 'error');
+            setTimeout(()=>{ item._idError=false; }, 2000);
+            return;
+          }
+          this.selectBulkClient(item, match);
+          if (goNext) this.focusBulkCell(item.uid, 'inBags');
+        },
+
         saveBulkEntries() {
           if (!this.requirePerm('daily-bulk')) return;
           let count = 0;
@@ -7282,7 +7473,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
                 challanNo
               });
               this.recalculateClientLedger(row.clientId);
-              if (this.settings.useChallanNo && challanNo) this.recordChallanUse(row.clientId, entryDate, challanNo);
+              this.syncChallanForLedger(row.clientId, entryDate, challanNo);
               count++;
             }
           });
@@ -7305,14 +7496,26 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
         },
 
         // ব্যবহৃত চালান রেকর্ড — Bulk Entry-তে actual যে চালান নম্বর দিয়ে entry save হলো
-        // (ব্যবহার চালান নম্বর = ON থাকলে)। একই চালান একাধিকবার ব্যবহার করলে প্রতিটি আলাদা রেকর্ড।
+        // (ব্যবহার চালান নম্বর = ON থাকলে)। একই ক্লায়েন্ট+তারিখের পুরনো রেকর্ড থাকলে তা update হয়
+        // (নতুন রেকর্ড বানায় না) — যেন চালান নম্বর বদলালে ক্লায়েন্ট লেজার ও চালান বই দুটোতেই বদলে যায়।
         recordChallanUse(clientId, date, challanNo) {
           const c = this.getClientById(clientId);
+          const code = c ? c.clientId : ('' + clientId);
+          const name = c ? c.name : 'Unknown';
+          const existing = this.challanRecords.find(r => r.clientId === clientId && r.date === date);
+          if (existing) {
+            existing.challanNo = String(challanNo);
+            existing.clientCode = code;
+            existing.clientName = name;
+            existing.updatedAt = Date.now();
+            this.enqueueRecordSync('challan_records', existing);
+            return existing;
+          }
           const rec = {
             id: 'challan_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
             clientId,
-            clientCode: c ? c.clientId : ('' + clientId),
-            clientName: c ? c.name : 'Unknown',
+            clientCode: code,
+            clientName: name,
             date,
             challanNo: String(challanNo),
             imageUrl: '',
@@ -7321,6 +7524,22 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           this.challanRecords.push(rec);
           this.enqueueRecordSync('challan_records', rec);
           return rec;
+        },
+
+        // চালান নম্বর শূন্য/বদল হলে চালান বইয়ের রেকর্ড মুছে/আপডেট করে
+        // (Client Ledger-এর ইনলাইন এডিট/ডিলিটে ব্যবহৃত হবে)।
+        syncChallanForLedger(clientId, date, challanNo) {
+          if (!this.settings.useChallanNo) return;
+          const cn = String(challanNo || '').trim();
+          if (cn) {
+            this.recordChallanUse(clientId, date, cn);
+          } else {
+            const recs = this.challanRecords.filter(r => r.clientId === clientId && r.date === date);
+            recs.forEach(r => {
+              this.challanRecords = this.challanRecords.filter(x => x.id !== r.id);
+              if (r._cloudId && this.cloudQueue) this.cloudQueue.enqueue({ op: 'delete', collection: 'challan_records', id: r._cloudId });
+            });
+          }
         },
 
         // সেভ করা Challenge Records-এর Status ও Usage Count
