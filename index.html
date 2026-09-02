@@ -1445,8 +1445,8 @@
                       <th class="py-3 px-2 text-center" style="min-width:90px">আইডি *</th>
                       <th class="py-3 px-2" style="min-width:140px">নাম</th>
                       <th class="py-3 px-2" style="min-width:140px">ঠিকানা</th>
-                      <th class="py-3 px-2 text-center" colspan="2" style="min-width:160px">স্টক ইন (বস্তা / কে.জি)</th>
                       <th class="py-3 px-2 text-center" colspan="2" style="min-width:130px">স্টক (বস্তা / কে.জি)</th>
+                      <th class="py-3 px-2 text-center" colspan="2" style="min-width:160px">স্টক ইন (বস্তা / কে.জি)</th>
                       <th class="py-3 px-2 text-center" colspan="2" style="min-width:160px">ডেলিভারি (বস্তা / কে.জি)</th>
                       <th class="py-3 px-2 text-center" style="min-width:90px">স্টোর</th>
                       <th class="py-3 px-2 text-center" style="min-width:120px">চালান নম্বর</th>
@@ -1498,6 +1498,10 @@
                         <td class="py-2 px-2 font-medium truncate max-w-[140px]" :title="item.clientName" x-text="item.clientName || '-'"></td>
                         <!-- ঠিকানা -->
                         <td class="py-2 px-2 text-apple-secondary truncate max-w-[140px]" :title="item.address" x-text="item.address || '-'"></td>
+                        <!-- স্টক বস্তা (display) -->
+                        <td class="py-2 px-1 text-center font-semibold bg-gray-50 dark:bg-zinc-800/50 rounded" x-text="item.prevBags"></td>
+                        <!-- স্টক কেজি (display) -->
+                        <td class="py-2 px-1 text-center font-semibold bg-gray-50 dark:bg-zinc-800/50 rounded" x-text="item.prevKg"></td>
                         <!-- স্টক ইন বস্তা -->
                         <td class="py-2 px-1">
                           <input type="number" min="0" x-model.number="item.inBags" placeholder="0" :id="'bulk-cell-' + item.uid + '-inBags'" @keydown.arrow-left.prevent="bulkCellMove(item,'inBags',-1,0)" @keydown.arrow-right.prevent="bulkCellMove(item,'inBags',1,0)" @keydown.arrow-up.prevent="bulkCellMove(item,'inBags',0,-1)" @keydown.arrow-down.prevent="bulkCellMove(item,'inBags',0,1)" @keydown.enter.prevent="bulkCellEnter(item,'inBags')" class="w-14 p-1.5 text-center border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700">
@@ -1506,10 +1510,6 @@
                         <td class="py-2 px-1">
                           <input type="number" min="0" step="0.01" x-model.number="item.inKg" placeholder="0" :id="'bulk-cell-' + item.uid + '-inKg'" @keydown.arrow-left.prevent="bulkCellMove(item,'inKg',-1,0)" @keydown.arrow-right.prevent="bulkCellMove(item,'inKg',1,0)" @keydown.arrow-up.prevent="bulkCellMove(item,'inKg',0,-1)" @keydown.arrow-down.prevent="bulkCellMove(item,'inKg',0,1)" @keydown.enter.prevent="bulkCellEnter(item,'inKg')" class="w-20 p-1.5 text-center border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700">
                         </td>
-                        <!-- স্টক বস্তা (display) -->
-                        <td class="py-2 px-1 text-center font-semibold bg-gray-50 dark:bg-zinc-800/50 rounded" x-text="item.prevBags"></td>
-                        <!-- স্টক কেজি (display) -->
-                        <td class="py-2 px-1 text-center font-semibold bg-gray-50 dark:bg-zinc-800/50 rounded" x-text="item.prevKg"></td>
                         <!-- ডেলিভারি বস্তা -->
                         <td class="py-2 px-1">
                           <input type="number" min="0" x-model.number="item.outBags" placeholder="0" :id="'bulk-cell-' + item.uid + '-outBags'" @keydown.arrow-left.prevent="bulkCellMove(item,'outBags',-1,0)" @keydown.arrow-right.prevent="bulkCellMove(item,'outBags',1,0)" @keydown.arrow-up.prevent="bulkCellMove(item,'outBags',0,-1)" @keydown.arrow-down.prevent="bulkCellMove(item,'outBags',0,1)" @keydown.enter.prevent="bulkCellEnter(item,'outBags')" class="w-14 p-1.5 text-center border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700">
@@ -2716,10 +2716,10 @@
                         <th class="py-3 px-2 text-center" style="min-width:90px">আইডি *</th>
                         <th class="py-3 px-2" style="min-width:140px">নাম</th>
                         <th class="py-3 px-2" style="min-width:140px">ঠিকানা</th>
+                        <th class="py-3 px-2 text-right" style="min-width:120px">বর্তমান টাকা</th>
                         <th class="py-3 px-2 text-right" style="min-width:100px">টাকা জমা (৳)</th>
                         <th class="py-3 px-2 text-right" style="min-width:110px">মাসিক চার্জ (৳)</th>
                         <th class="py-3 px-2 text-right" style="min-width:100px">কৈফিয়ৎ (৳)</th>
-                        <th class="py-3 px-2 text-right" style="min-width:120px">বর্তমান টাকা</th>
                         <th class="py-3 px-2" style="min-width:160px">মন্তব্য</th>
                         <th class="py-3 px-2 text-center" style="min-width:110px">গ্রাহকের অবস্থান</th>
                         <th class="py-3 px-2" style="min-width:40px"></th>
@@ -2731,10 +2731,10 @@
                           <td class="py-2 px-2"><input type="date" x-model="item.date" @input="refreshPaymentRowDate(item)" class="w-full p-1.5 text-center border rounded-lg bg-gray-50 dark:bg-zinc-800 border-gray-200 dark:border-gray-700 text-[11px]"></td>
                           <td class="py-2 px-2">
                             <div class="relative">
-                              <input type="text" x-model="item.clientCode" @input="onPaymentIdInput(item)" @focus="onPaymentIdInput(item)" @blur="onPaymentIdBlur(item)" :class="item._idError ? 'border-red-500 bg-red-50' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800'" placeholder="ID" class="w-full p-1.5 text-center font-bold text-apple-blue border rounded-lg text-[11px] focus:outline-none focus:ring-2 focus:ring-apple-blue/30">
+                              <input type="text" x-model="item.clientCode" @input="onPaymentIdInput(item)" @focus="onPaymentIdInput(item)" @blur="onPaymentIdBlur(item)" @keydown.down="paymentIdArrow(item, 1); $event.preventDefault()" @keydown.up="paymentIdArrow(item, -1); $event.preventDefault()" @keydown.enter.prevent="paymentCellEnter(item, 'clientCode')" :id="'pay-cell-' + item.uid + '-clientCode'" :class="item._idError ? 'border-red-500 bg-red-50' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800'" placeholder="ID" class="w-full p-1.5 text-center font-bold text-apple-blue border rounded-lg text-[11px] focus:outline-none focus:ring-2 focus:ring-apple-blue/30">
                               <div x-show="item.showSuggest && item.filtered.length" class="absolute z-20 top-full left-0 mt-1 w-72 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-52 overflow-y-auto">
-                                <template x-for="c in item.filtered" :key="c.id">
-                                  <div @mousedown.prevent="selectPaymentClient(item, c)" class="px-3 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-0">
+                                <template x-for="(c, ci) in item.filtered" :key="c.id">
+                                  <div @mousedown.prevent="selectPaymentClient(item, c)" @mouseenter="item._sP = ci" :class="item._sP === ci ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'hover:bg-emerald-50 dark:hover:bg-emerald-900/20'" class="px-3 py-2 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-0">
                                     <div class="flex justify-between items-center">
                                       <span class="font-bold text-apple-blue text-xs" x-text="'ID:'+c.clientId"></span>
                                       <span class="text-[10px] px-1.5 py-0.5 rounded font-bold" :class="(c.runningBalance||0)===0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'" x-text="'৳'+formatMoney(c.runningBalance||0)"></span>
@@ -2751,11 +2751,11 @@
                             <span x-show="item._paymentId" class="ml-1.5 text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200 font-bold align-middle whitespace-nowrap">আপডেট</span>
                           </td>
                           <td class="py-2 px-2 text-apple-secondary truncate max-w-[140px]" :title="item.address" x-text="item.address||'-'"></td>
-                          <td class="py-2 px-2"><input type="number" min="0" x-model.number="item.amount" placeholder="0" class="w-full p-1.5 text-right font-bold text-apple-green border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700"></td>
-                          <td class="py-2 px-2"><input type="number" min="0" x-model.number="item.charge" placeholder="চার্জ" class="w-full p-1.5 text-right font-bold text-violet-600 border rounded-lg bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-700"></td>
-                          <td class="py-2 px-2"><input type="number" min="0" x-model.number="item.kaifiyat" placeholder="কৈফিয়ৎ" class="w-full p-1.5 text-right font-bold text-amber-600 border rounded-lg bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700"></td>
                           <td class="py-2 px-2 text-right font-bold" :class="getPaymentNewBalance(item)===0 ? 'text-red-600' : 'text-apple-blue'" x-text="'৳'+formatMoney(getPaymentNewBalance(item))"></td>
-                          <td class="py-2 px-2"><input type="text" x-model="item.note" placeholder="মন্তব্য" class="w-full p-1.5 border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700 text-[11px]"></td>
+                          <td class="py-2 px-2"><input type="number" min="0" x-model.number="item.amount" placeholder="0" :id="'pay-cell-' + item.uid + '-amount'" @keydown.arrow-left.prevent="paymentCellMove(item,'amount',-1,0)" @keydown.arrow-right.prevent="paymentCellMove(item,'amount',1,0)" @keydown.arrow-up.prevent="paymentCellMove(item,'amount',0,-1)" @keydown.arrow-down.prevent="paymentCellMove(item,'amount',0,1)" @keydown.enter.prevent="paymentCellEnter(item,'amount')" class="w-full p-1.5 text-right font-bold text-apple-green border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700"></td>
+                          <td class="py-2 px-2"><input type="number" min="0" x-model.number="item.charge" placeholder="চার্জ" :id="'pay-cell-' + item.uid + '-charge'" @keydown.arrow-left.prevent="paymentCellMove(item,'charge',-1,0)" @keydown.arrow-right.prevent="paymentCellMove(item,'charge',1,0)" @keydown.arrow-up.prevent="paymentCellMove(item,'charge',0,-1)" @keydown.arrow-down.prevent="paymentCellMove(item,'charge',0,1)" @keydown.enter.prevent="paymentCellEnter(item,'charge')" class="w-full p-1.5 text-right font-bold text-violet-600 border rounded-lg bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-700"></td>
+                          <td class="py-2 px-2"><input type="number" min="0" x-model.number="item.kaifiyat" placeholder="কৈফিয়ৎ" :id="'pay-cell-' + item.uid + '-kaifiyat'" @keydown.arrow-left.prevent="paymentCellMove(item,'kaifiyat',-1,0)" @keydown.arrow-right.prevent="paymentCellMove(item,'kaifiyat',1,0)" @keydown.arrow-up.prevent="paymentCellMove(item,'kaifiyat',0,-1)" @keydown.arrow-down.prevent="paymentCellMove(item,'kaifiyat',0,1)" @keydown.enter.prevent="paymentCellEnter(item,'kaifiyat')" class="w-full p-1.5 text-right font-bold text-amber-600 border rounded-lg bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700"></td>
+                          <td class="py-2 px-2"><input type="text" x-model="item.note" placeholder="মন্তব্য" :id="'pay-cell-' + item.uid + '-note'" @keydown.arrow-left.prevent="paymentCellMove(item,'note',-1,0)" @keydown.arrow-right.prevent="paymentCellMove(item,'note',1,0)" @keydown.arrow-up.prevent="paymentCellMove(item,'note',0,-1)" @keydown.arrow-down.prevent="paymentCellMove(item,'note',0,1)" @keydown.enter.prevent="paymentCellMove(item,'note',1,0)" class="w-full p-1.5 border rounded-lg bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700 text-[11px]"></td>
                           <td class="py-2 px-2 text-center"><span class="text-[10px] px-2 py-1 rounded-full border font-semibold" :class="getPaymentStatus(item).cls" x-text="getPaymentStatus(item).text"></span></td>
                           <td class="py-2 px-1 text-center"><button @click="removePaymentRow(item.uid)" class="w-7 h-7 rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 hover:bg-red-100 flex items-center justify-center text-xs">×</button></td>
                         </tr>
@@ -2781,10 +2781,10 @@
                 <div class="grid grid-cols-2 gap-4">
                   <div class="relative">
                     <label class="text-xs font-semibold">Source ID *</label>
-                    <input type="text" x-model="transferForm.sourceCode" @input="onTransferSourceInput()" @focus="onTransferSourceInput()" placeholder="ID" class="w-full mt-1 p-2.5 text-sm font-bold text-center border rounded-xl bg-gray-50 dark:bg-zinc-700 border-gray-300 dark:border-gray-600">
+                    <input type="text" x-model="transferForm.sourceCode" @input="onTransferSourceInput()" @focus="onTransferSourceInput()" @keydown.down="transferIdArrow('src', 1); $event.preventDefault()" @keydown.up="transferIdArrow('src', -1); $event.preventDefault()" @keydown.enter.prevent="transferFieldEnter('sourceCode')" :id="'tr-modal-sourceCode'" placeholder="ID" class="w-full mt-1 p-2.5 text-sm font-bold text-center border rounded-xl bg-gray-50 dark:bg-zinc-700 border-gray-300 dark:border-gray-600">
                     <div x-show="transferForm.showSourceSuggest && transferForm.sourceFiltered.length" class="absolute z-10 top-full left-0 mt-1 w-full bg-white dark:bg-zinc-700 border rounded-xl shadow-lg max-h-40 overflow-y-auto">
-                      <template x-for="c in transferForm.sourceFiltered" :key="c.id">
-                        <div @mousedown.prevent="selectTransferSource(c)" class="px-3 py-2 hover:bg-indigo-50 cursor-pointer border-b text-xs"><span class="font-bold" x-text="'ID:'+c.clientId"></span> — <span x-text="c.name"></span> <span class="float-right font-bold" x-text="'৳'+formatMoney(c.runningBalance||0)"></span></div>
+                      <template x-for="(c, ci) in transferForm.sourceFiltered" :key="c.id">
+                        <div @mousedown.prevent="selectTransferSource(c)" @mouseenter="transferForm._srcS = ci" :class="transferForm._srcS === ci ? 'bg-indigo-50' : 'hover:bg-indigo-50'" class="px-3 py-2 cursor-pointer border-b text-xs"><span class="font-bold" x-text="'ID:'+c.clientId"></span> — <span x-text="c.name"></span> <span class="float-right font-bold" x-text="'৳'+formatMoney(c.runningBalance||0)"></span></div>
                       </template>
                     </div>
                     <p x-show="transferForm.sourceId" class="text-[11px] mt-1 font-semibold" :class="transferAvailable(clients.find(c=>c.id===transferForm.sourceId)) > 0 ? 'text-apple-green' : 'text-red-600'" x-text="transferForm.sourceId ? '→ '+ (clients.find(c=>c.id===transferForm.sourceId)?.name || '') + ' | বর্তমান ৳'+formatMoney(clients.find(c=>c.id===transferForm.sourceId)?.runningBalance||0) + ' | ট্রান্সফারযোগ্য ৳'+formatMoney(transferAvailable(clients.find(c=>c.id===transferForm.sourceId))) : ''"></p>
@@ -2792,18 +2792,18 @@
                   </div>
                   <div class="relative">
                     <label class="text-xs font-semibold">Dest ID *</label>
-                    <input type="text" x-model="transferForm.destCode" @input="onTransferDestInput()" @focus="onTransferDestInput()" placeholder="ID" class="w-full mt-1 p-2.5 text-sm font-bold text-center border rounded-xl bg-gray-50 dark:bg-zinc-700 border-gray-300 dark:border-gray-600">
+                    <input type="text" x-model="transferForm.destCode" @input="onTransferDestInput()" @focus="onTransferDestInput()" @keydown.down="transferIdArrow('dst', 1); $event.preventDefault()" @keydown.up="transferIdArrow('dst', -1); $event.preventDefault()" @keydown.enter.prevent="transferFieldEnter('destCode')" :id="'tr-modal-destCode'" placeholder="ID" class="w-full mt-1 p-2.5 text-sm font-bold text-center border rounded-xl bg-gray-50 dark:bg-zinc-700 border-gray-300 dark:border-gray-600">
                     <div x-show="transferForm.showDestSuggest && transferForm.destFiltered.length" class="absolute z-10 top-full left-0 mt-1 w-full bg-white dark:bg-zinc-700 border rounded-xl shadow-lg max-h-40 overflow-y-auto">
-                      <template x-for="c in transferForm.destFiltered" :key="c.id">
-                        <div @mousedown.prevent="selectTransferDest(c)" class="px-3 py-2 hover:bg-emerald-50 cursor-pointer border-b text-xs"><span class="font-bold" x-text="'ID:'+c.clientId"></span> — <span x-text="c.name"></span> <span class="float-right font-bold" x-text="'৳'+formatMoney(c.runningBalance||0)"></span></div>
+                      <template x-for="(c, ci) in transferForm.destFiltered" :key="c.id">
+                        <div @mousedown.prevent="selectTransferDest(c)" @mouseenter="transferForm._dstS = ci" :class="transferForm._dstS === ci ? 'bg-emerald-50' : 'hover:bg-emerald-50'" class="px-3 py-2 cursor-pointer border-b text-xs"><span class="font-bold" x-text="'ID:'+c.clientId"></span> — <span x-text="c.name"></span> <span class="float-right font-bold" x-text="'৳'+formatMoney(c.runningBalance||0)"></span></div>
                       </template>
                     </div>
                     <p x-show="transferForm.destId" class="text-[11px] text-apple-secondary mt-1 font-semibold" x-text="transferForm.destId ? '→ '+ (clients.find(c=>c.id===transferForm.destId)?.name || '') + ' | বর্তমান ৳'+formatMoney(clients.find(c=>c.id===transferForm.destId)?.runningBalance||0) : ''"></p>
                   </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                  <div><label class="text-xs font-semibold">টাকা *</label><input type="number" min="0" step="0.01" x-model.number="transferForm.amount" placeholder="0" class="w-full mt-1 p-2.5 text-sm font-bold text-right border rounded-xl bg-gray-50 dark:bg-zinc-700 border-gray-300 dark:border-gray-600"></div>
-                  <div><label class="text-xs font-semibold">তারিখ</label><input type="date" x-model="transferForm.date" class="w-full mt-1 p-2.5 text-sm border rounded-xl bg-gray-50 dark:bg-zinc-700 border-gray-300 dark:border-gray-600"></div>
+                  <div><label class="text-xs font-semibold">টাকা *</label><input type="number" min="0" step="0.01" x-model.number="transferForm.amount" placeholder="0" :id="'tr-modal-amount'" @keydown.arrow-left.prevent="transferFieldMove('amount',-1)" @keydown.arrow-right.prevent="transferFieldMove('amount',1)" @keydown.arrow-up.prevent="transferFieldMove('amount',-1)" @keydown.arrow-down.prevent="transferFieldMove('amount',1)" @keydown.enter.prevent="transferFieldEnter('amount')" class="w-full mt-1 p-2.5 text-sm font-bold text-right border rounded-xl bg-gray-50 dark:bg-zinc-700 border-gray-300 dark:border-gray-600"></div>
+                  <div><label class="text-xs font-semibold">তারিখ</label><input type="date" x-model="transferForm.date" :id="'tr-modal-date'" @keydown.enter.prevent="transferFieldEnter('date')" class="w-full mt-1 p-2.5 text-sm border rounded-xl bg-gray-50 dark:bg-zinc-700 border-gray-300 dark:border-gray-600"></div>
                 </div>
                 <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 rounded-xl p-3 text-xs leading-relaxed space-y-1">
                   <p x-show="!transferPreview()" class="text-apple-secondary">— Source ও Dest বাছাই করুন —</p>
@@ -5106,7 +5106,7 @@
         bulkEntryDate: new Date().toISOString().slice(0, 10),
         bulkStartChallan: '',
         showTransferModal: false,
-        transferForm: { sourceCode: '', sourceId: null, destCode: '', destId: null, amount: 0, date: new Date().toISOString().slice(0, 10), sourceFiltered: [], destFiltered: [], showSourceSuggest: false, showDestSuggest: false },
+        transferForm: { sourceCode: '', sourceId: null, destCode: '', destId: null, amount: 0, date: new Date().toISOString().slice(0, 10), sourceFiltered: [], destFiltered: [], showSourceSuggest: false, showDestSuggest: false, _srcS: 0, _dstS: 0 },
 
         // Store modal state
         showStoreModal: false,
@@ -7664,6 +7664,7 @@ selectClient(clientId) {
             note: '',
             showSuggest: false,
             filtered: [],
+            _sP: 0,
             _idError: false,
             _paymentId: null,
             _oldTotal: 0,
@@ -7736,6 +7737,7 @@ selectClient(clientId) {
             (c.mobile||'').includes(q)
           ).slice(0,8);
           row.showSuggest = row.filtered.length > 0;
+          row._sP = 0;
         },
 
         selectPaymentClient(row, client) {
@@ -7791,6 +7793,86 @@ selectClient(clientId) {
               }
             }
           },180);
+        },
+
+        // ===== টাকা জমা রেজিস্টার কীবোর্ড নেভিগেশন (Directional Keys) =====
+        paymentNavFields: ['clientCode', 'amount', 'charge', 'kaifiyat', 'note'],
+
+        focusPaymentCell(uid, field) {
+          const el = document.getElementById('pay-cell-' + uid + '-' + field);
+          if (el) { el.focus(); if (el.select) el.select(); }
+        },
+
+        paymentRowIndex(item) { return this.paymentRows.findIndex(r => r.uid === item.uid); },
+
+        paymentCellMove(item, field, dc, dr) {
+          const fields = this.paymentNavFields;
+          let fi = fields.indexOf(field);
+          let ri = this.paymentRowIndex(item);
+          if (ri < 0 || fi < 0) return;
+          if (dr !== 0) {
+            // উল্লম্ব: একই ঘর, আগের/পরের সারি
+            let tr = ri + dr;
+            if (tr >= this.paymentRows.length) { this.addPaymentRow(); tr = this.paymentRows.length - 1; }
+            if (tr < 0) return;
+            this.focusPaymentCell(this.paymentRows[tr].uid, field);
+            return;
+          }
+          // অনুভূমিক
+          let nfi = fi + dc;
+          if (nfi < 0) {
+            // আগের সারির মন্তব্যে
+            if (ri > 0) this.focusPaymentCell(this.paymentRows[ri - 1].uid, 'note');
+            return;
+          }
+          if (nfi >= fields.length) {
+            // পরের সারির আইডিতে (শেষ সারি হলে নতুন সারি)
+            if (ri === this.paymentRows.length - 1) this.addPaymentRow();
+            const tr = Math.min(ri + 1, this.paymentRows.length - 1);
+            this.focusPaymentCell(this.paymentRows[tr].uid, 'clientCode');
+            return;
+          }
+          this.focusPaymentCell(item.uid, fields[nfi]);
+        },
+
+        paymentCellEnter(item, field) {
+          if (field === 'clientCode') { this.selectPaymentClientFromCode(item, true); return; }
+          this.paymentCellMove(item, field, 1, 0);
+        },
+
+        // আইডি ঘরে ↑/↓ দিলে সাজেশন ড্রপডাউনের হাইলাইট ঘুরবে
+        paymentIdArrow(item, dir) {
+          if (!item.clientCode || !item.clientCode.trim()) { this.onPaymentIdInput(item); return; }
+          if (!item.showSuggest) this.onPaymentIdInput(item);
+          const n = (item.filtered || []).length;
+          if (!n) return;
+          item._sP = ((item._sP ?? 0) + dir) % n;
+          if (item._sP < 0) item._sP += n;
+          item.showSuggest = true;
+        },
+
+        // আইডি Enter: ঠিক মিল বা হাইলাইট করা সাজেশন সিলেক্ট করে টাকা জমায় চলে যায়
+        selectPaymentClientFromCode(item, goNext = true) {
+          const q = (item.clientCode || '').toString().trim();
+          item.showSuggest = false;
+          if (!q) { item._idError = true; setTimeout(()=>{ item._idError=false; }, 2000); return; }
+          let match = this.clients.find(c => c.clientId.toString().toLowerCase() === q.toLowerCase());
+          if (!match) {
+            const list = this.clients.filter(c =>
+              c.clientId.toString().toLowerCase().includes(q) ||
+              c.name.toLowerCase().includes(q) ||
+              (c.mobile || '').includes(q)
+            );
+            if (list.length) match = list[Math.min(item._sP ?? 0, list.length - 1)];
+          }
+          if (!match) {
+            item._idError = true;
+            this.showToast('ভুল ID: ' + q + ' — ক্লায়েন্ট পাওয়া যায়নি', 'error');
+            setTimeout(()=>{ item._idError=false; }, 2000);
+            return;
+          }
+          this.selectPaymentClient(item, match);
+          if (goNext) this.focusPaymentCell(item.uid, 'amount');
         },
 
         getPaymentNewBalance(row) {
@@ -7957,6 +8039,7 @@ selectClient(clientId) {
           if (!q) { this.transferForm.sourceFiltered=[]; this.transferForm.showSourceSuggest=false; this.transferForm.sourceId=null; return; }
           this.transferForm.sourceFiltered = this.clients.filter(c=> c.clientId.toString().toLowerCase().includes(q) || c.name.toLowerCase().includes(q)).slice(0,8);
           this.transferForm.showSourceSuggest = this.transferForm.sourceFiltered.length>0;
+          this.transferForm._srcS = 0;
         },
         selectTransferSource(c) {
           this.transferForm.sourceId = c.id;
@@ -7972,11 +8055,77 @@ selectClient(clientId) {
           if (!q) { this.transferForm.destFiltered=[]; this.transferForm.showDestSuggest=false; this.transferForm.destId=null; return; }
           this.transferForm.destFiltered = this.clients.filter(c=> c.clientId.toString().toLowerCase().includes(q) || c.name.toLowerCase().includes(q)).slice(0,8);
           this.transferForm.showDestSuggest = this.transferForm.destFiltered.length>0;
+          this.transferForm._dstS = 0;
         },
         selectTransferDest(c) {
           this.transferForm.destId = c.id;
           this.transferForm.destCode = c.clientId;
           this.transferForm.showDestSuggest=false;
+        },
+
+        // ===== ট্রান্সফার মোডাল কীবোর্ড নেভিগেশন =====
+        transferNavFields: ['sourceCode', 'destCode', 'amount', 'date'],
+
+        focusTransferField(field) {
+          const el = document.getElementById('tr-modal-' + field);
+          if (el) { el.focus(); if (el.select) el.select(); }
+        },
+
+        transferFieldMove(current, dc) {
+          const fields = this.transferNavFields;
+          const fi = fields.indexOf(current);
+          if (fi < 0) return;
+          const nfi = fi + dc;
+          if (nfi < 0 || nfi >= fields.length) return;
+          this.focusTransferField(fields[nfi]);
+        },
+
+        // ↑/↓ দিয়ে Source/Dest সাজেশন হাইলাইট
+        transferIdArrow(which, dir) {
+          const f = this.transferForm;
+          const code = which === 'src' ? f.sourceCode : f.destCode;
+          const filtered = which === 'src' ? f.sourceFiltered : f.destFiltered;
+          const showKey = which === 'src' ? 'showSourceSuggest' : 'showDestSuggest';
+          const spKey = which === 'src' ? '_srcS' : '_dstS';
+          if (!code || !String(code).trim()) { if (which==='src') this.onTransferSourceInput(); else this.onTransferDestInput(); return; }
+          if (!f[showKey]) { if (which==='src') this.onTransferSourceInput(); else this.onTransferDestInput(); }
+          const n = (filtered || []).length;
+          if (!n) return;
+          f[spKey] = ((f[spKey] ?? 0) + dir) % n;
+          if (f[spKey] < 0) f[spKey] += n;
+          f[showKey] = true;
+        },
+
+        // Source/Dest-এ Enter: ঠিক মিল/হাইলাইট সাজেশন সিলেক্ট করে পরের ঘরে
+        selectTransferFromCode(which) {
+          const f = this.transferForm;
+          const code = which === 'src' ? f.sourceCode : f.destCode;
+          const filtered = which === 'src' ? f.sourceFiltered : f.destFiltered;
+          const spKey = which === 'src' ? '_srcS' : '_dstS';
+          const q = (code || '').toString().trim();
+          if (!q) { if (which==='src') this.onTransferSourceInput(); else this.onTransferDestInput(); return; }
+          let match = this.clients.find(c => c.clientId.toString().toLowerCase() === q.toLowerCase());
+          if (!match) {
+            const list = this.clients.filter(c => c.clientId.toString().toLowerCase().includes(q) || c.name.toLowerCase().includes(q));
+            if (list.length) match = list[Math.min(f[spKey] ?? 0, list.length - 1)];
+          }
+          if (!match) { this.showToast('ভুল ID: ' + q + ' — ক্লায়েন্ট পাওয়া যায়নি', 'error'); return; }
+          if (which === 'src') {
+            f.sourceId = match.id; f.sourceCode = match.clientId; f.showSourceSuggest = false;
+            const avail = this.transferAvailable(match);
+            if (avail > 0) f.amount = avail;
+            this.focusTransferField('destCode');
+          } else {
+            f.destId = match.id; f.destCode = match.clientId; f.showDestSuggest = false;
+            this.focusTransferField('amount');
+          }
+        },
+
+        transferFieldEnter(current) {
+          if (current === 'sourceCode') this.selectTransferFromCode('src');
+          else if (current === 'destCode') this.selectTransferFromCode('dst');
+          else if (current === 'date') this.saveTransfer();
+          else this.transferFieldMove(current, 1);
         },
 
         // Live preview for the transfer modal (before/after balances).
