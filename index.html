@@ -483,6 +483,22 @@
         color: #000000 !important;
       }
     }
+    /* ===== Daily Income-Expense Print — image replica (A4 portrait 2-col) ===== */
+    .cash-print-frame { border: 1.2px solid #000; font-family: 'Hind Siliguri','Noto Sans Bengali',sans-serif; background:#fff; color:#000 !important; box-sizing:border-box; }
+    .cash-print-frame *{ box-sizing:border-box; color:#000 !important; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+    .cash-print-frame .cash-header{ text-align:center; border-bottom:1.2px solid #000; padding:4mm 3mm 2.5mm; }
+    .cash-print-frame .cash-title{ font-size:14px; font-weight:800; line-height:1.2; }
+    .cash-print-frame .cash-subtitle{ font-size:8.5px; font-weight:600; line-height:1.3; }
+    .cash-print-frame .cash-outer{ width:100%; border-collapse:collapse; table-layout:fixed; }
+    .cash-print-frame .cash-half{ vertical-align:top; width:50%; border-right:1.2px solid #000; }
+    .cash-print-frame .cash-half:last-child{ border-right:none; }
+    .cash-print-frame .cash-half-head{ text-align:center; font-weight:800; font-size:10px; border-bottom:1.2px solid #000; padding:2px 0; background:#f3f4f6 !important; }
+    .cash-print-frame .cash-inner{ width:100%; border-collapse:collapse; table-layout:fixed; }
+    .cash-print-frame .cash-inner th{ border:1px solid #000 !important; font-size:7.5px; font-weight:700; padding:1.5px 3px; text-align:center; background:#f9fafb !important; }
+    .cash-print-frame .cash-inner td{ border:1px solid #000 !important; font-size:7.8px; font-weight:600; padding:1.4px 3px; line-height:1.25; }
+    .cash-print-frame .cash-total td{ border-top:1.2px solid #000 !important; font-weight:800 !important; background:#fef9c3 !important; }
+    @media print { .cash-print-frame .cash-inner td, .cash-print-frame .cash-inner th{ border:1px solid #000 !important; } .cash-screen{ display:none !important; } .cash-print-frame{ display:block !important; margin:0 !important; } }
+
     .print-only { display: none; }
     /* Custom scrollbar for sidebar & side panels */
     .custom-scrollbar::-webkit-scrollbar { width: 4px; }
@@ -1074,7 +1090,7 @@
                       <th class="py-3 px-4">মোবাইল</th>
                       <th class="py-3 px-4">সাবেক স্টক (উদ্বোধনী)</th>
                       <th class="py-3 px-4">বর্তমান স্টক (বস্তা / কেজি)</th>
-                      <th class="py-3 px-4">দৈনিক দর</th>
+                      <th class="py-3 px-4">হিসাবের দর</th>
                       <th class="py-3 px-4 text-right">মোট বিল</th>
                       <th class="py-3 px-4 text-center">অ্যাকশন</th>
                     </tr>
@@ -1090,7 +1106,7 @@
                         <td class="py-3.5 px-4 font-medium" x-text="client.mobile || '-'"></td>
                         <td class="py-3.5 px-4 text-apple-secondary" x-text="client.openingStock.bags + ' বস্তা / ' + client.openingStock.kg + 'kg'"></td>
                         <td class="py-3.5 px-4 font-semibold text-indigo-600 dark:text-indigo-400" x-text="client.currentStock.bags + ' বস্তা / ' + client.currentStock.kg + 'kg'"></td>
-                        <td class="py-3.5 px-4 font-medium" x-text="'৳ ' + (getEffectiveDisplayRate(client.id, todayStr()) || 0)"></td>
+                        <td class="py-3.5 px-4 font-medium" x-text="getEffectiveRate(client.id, todayStr()) || 0"></td>
                         <td class="py-3.5 px-4 text-right font-bold text-sm" :class="client.runningBalance > 0 ? 'text-apple-red' : 'text-apple-green'" x-text="'৳ ' + formatMoney(client.runningBalance)"></td>
                         <td class="py-3.5 px-4 text-center space-x-1">
                           <button @click="selectClient(client.id); goToTab('client-ledger')" class="px-2.5 py-1 bg-apple-blue/10 text-apple-blue hover:bg-apple-blue hover:text-white rounded-lg text-[11px] font-medium transition">
@@ -1332,7 +1348,17 @@
                     <label class="block text-xs text-apple-secondary mb-1">শেষ তারিখ:</label>
                     <input type="date" x-model="clientReportTo" class="text-xs font-semibold p-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800">
                   </div>
+                  <!-- Quick range shortcuts -->
+                  <div class="flex items-center gap-1.5 pb-0.5">
+                    <button @click="setReportMonthRange(0)" class="px-3 py-2 rounded-lg bg-gray-100 dark:bg-zinc-800 text-[11px] font-semibold text-apple-secondary hover:bg-apple-blue/10 transition">এই মাস</button>
+                    <button @click="setReportMonthRange(1)" class="px-3 py-2 rounded-lg bg-apple-blue/10 text-apple-blue text-[11px] font-semibold hover:bg-apple-blue hover:text-white transition">আগামী মাস</button>
+                  </div>
                 </div>
+              </div>
+
+              <!-- Info note: future-date projection -->
+              <div class="no-print text-[11px] text-apple-secondary bg-blue-50 dark:bg-zinc-800/70 border border-blue-100 dark:border-zinc-700 rounded-lg px-3 py-2">
+                <span class="font-semibold text-apple-blue">টিপ:</span> শেষ তারিখ আজকের পরের (ভবিষ্যৎ) হলে সিস্টেম শেষ-জানা স্টক ও কার্যকর দর ধরে দিন-দিন চার্জ/ব্যালেন্স <span class="font-semibold">প্রজেক্ট</span> করে — এতে আগামী মাসের পুরো বিল/রিপোর্ট অগ্রিম বের করা যায়। কোনও ডেটা সেভ হয় না।
               </div>
 
               <!-- 1. Single Client Report: Exact Monthly Bill Format (A4 Portrait) -->
@@ -1343,9 +1369,8 @@
                       <!-- 1. Bill Header -->
                       <div class="bill-header-box" :style="getBoxBorderStyle('header') + '; ' + getBoxSizeStyle('header') + '; ' + getBoxPositionStyle('header')">
                         <div class="bill-left-title-box" :style="'width:' + (settings.billLayout ? settings.billLayout.headerWidth : 17) + '%;'">
-                          <div class="tag-bill">রিপোর্ট</div>
-                          <div class="tag-month text-[10px] leading-tight" x-text="formatDate(clientReportFrom)"></div>
-                          <div class="tag-year text-[9px] leading-tight">হইতে <span x-text="formatDate(clientReportTo)"></span></div>
+                          <div class="tag-month text-[10px] leading-tight" x-text="clientReportMonthLine"></div>
+                          <div class="tag-year text-[9px] leading-tight" x-text="clientReportYearLine"></div>
                         </div>
                         <div class="bill-company-box" :style="'text-align:' + (settings.billLayout ? settings.billLayout.headerAlign : 'center')">
                           <h1 class="company-title" x-text="settings.businessName"></h1>
@@ -3369,7 +3394,7 @@
         <div x-show="activeTab === 'daily-cash'" x-cloak>
           <div class="space-y-6">
             <!-- Page Header -->
-            <div class="bg-white dark:bg-apple-darkCard p-5 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div class="cash-screen bg-white dark:bg-apple-darkCard p-5 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <div>
                 <h3 class="text-base font-semibold">দৈনিক আয়-খরচ</h3>
                 <p class="text-xs text-apple-secondary">প্রতিদিনের ক্লায়েন্ট জমা (আয়) ও খরচের হিসাব</p>
@@ -3385,8 +3410,43 @@
               </div>
             </div>
 
+            <!-- Date Range Picker -->
+            <div class="cash-screen bg-white dark:bg-apple-darkCard p-4 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm">
+              <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <span class="text-xs font-semibold text-apple-secondary">তারিখ পরিসীমা:</span>
+                <div class="flex items-center space-x-2">
+                  <input type="date" x-model="cashRangeStart" class="px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 text-xs font-semibold">
+                  <span class="text-xs text-apple-secondary">থেকে</span>
+                  <input type="date" x-model="cashRangeEnd" class="px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 text-xs font-semibold">
+                </div>
+                <button @click="let t=new Date(); let s=new Date(t.getFullYear(),t.getMonth(),1); cashRangeStart=s.getFullYear()+'-'+String(s.getMonth()+1).padStart(2,'0')+'-'+String(s.getDate()).padStart(2,'0'); cashRangeEnd=t.toISOString().slice(0,10);" class="px-3 py-2 rounded-xl bg-gray-100 dark:bg-zinc-800 text-xs font-medium text-apple-secondary hover:bg-apple-blue/10 transition">এই মাস</button>
+                <button @click="let t=new Date(); let s=new Date(t.getFullYear(),t.getMonth()-1,1); let e=new Date(t.getFullYear(),t.getMonth(),0); cashRangeStart=s.getFullYear()+'-'+String(s.getMonth()+1).padStart(2,'0')+'-'+String(s.getDate()).padStart(2,'0'); cashRangeEnd=e.getFullYear()+'-'+String(e.getMonth()+1).padStart(2,'0')+'-'+String(e.getDate()).padStart(2,'0');" class="px-3 py-2 rounded-xl bg-gray-100 dark:bg-zinc-800 text-xs font-medium text-apple-secondary hover:bg-apple-blue/10 transition">গত মাস</button>
+                <button @click="printDailyCash('range')" :disabled="!cashRangeStart || !cashRangeEnd" class="px-4 py-2 bg-apple-blue text-white rounded-xl text-xs font-medium hover:bg-blue-600 transition flex items-center space-x-1.5 shadow-sm disabled:opacity-40">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                  <span>তারিখ পরিসীমা প্রিন্ট</span>
+                </button>
+              </div>
+              <!-- Range preview stats -->
+              <template x-if="cashRangeStart && cashRangeEnd && cashRangeStart <= cashRangeEnd">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+                  <div class="bg-apple-green/5 border border-apple-green/20 rounded-xl p-3">
+                    <p class="text-[11px] text-apple-secondary">মোট আয়</p>
+                    <p class="text-lg font-bold text-apple-green" x-text="'৳ ' + formatMoney(cashRangeIncomeTotal())"></p>
+                  </div>
+                  <div class="bg-apple-red/5 border border-apple-red/20 rounded-xl p-3">
+                    <p class="text-[11px] text-apple-secondary">মোট ব্যয়</p>
+                    <p class="text-lg font-bold text-apple-red" x-text="'৳ ' + formatMoney(cashRangeExpenseTotal())"></p>
+                  </div>
+                  <div class="bg-apple-blue/5 border border-apple-blue/20 rounded-xl p-3">
+                    <p class="text-[11px] text-apple-secondary">নিট (আয় − ব্যয়)</p>
+                    <p class="text-lg font-bold" :class="cashRangeNet() >= 0 ? 'text-apple-green' : 'text-apple-red'" x-text="'৳ ' + formatMoney(cashRangeNet())"></p>
+                  </div>
+                </div>
+              </template>
+            </div>
+
             <!-- Daily View -->
-            <div class="bg-white dark:bg-apple-darkCard rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm p-5 space-y-4">
+            <div class="cash-screen bg-white dark:bg-apple-darkCard rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm p-5 space-y-4">
               <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
                 <div class="flex items-center space-x-2">
                   <button @click="shiftCashDay(-1)" title="আগের দিন" class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-300 hover:bg-apple-blue hover:text-white transition flex items-center justify-center">&lsaquo;</button>
@@ -3481,7 +3541,7 @@
             </div>
 
             <!-- Monthly Summary -->
-            <div class="bg-white dark:bg-apple-darkCard rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm p-5 space-y-4">
+            <div class="cash-screen bg-white dark:bg-apple-darkCard rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm p-5 space-y-4">
               <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                   <h4 class="text-sm font-semibold">মাসিক সামারি</h4>
@@ -3521,6 +3581,86 @@
                     </tr>
                   </tfoot>
                 </table>
+              </div>
+            </div>
+            <!-- PRINT ONLY — daily / monthly / range income-expense -->
+            <div class="print-only cash-print-frame mt-4" style="break-inside:avoid;">
+              <div class="cash-header">
+                <div style="font-size:7px; font-weight:600;">বিসমিল্লাহির রাহমানির রাহিম</div>
+                <div class="cash-title" x-text="settings.businessName || 'মেসার্স এম.আর ট্রেডিং কোল্ড স্টোরেজ'"></div>
+                <div class="cash-subtitle" x-text="settings.businessSubtitle || 'বাজার: ২০৪ নং আউট রোড, মুদিরপুর, কোর্টবাজার, চট্টগ্রাম'"></div>
+                <div class="cash-subtitle" x-text="(cashPrintScope==='monthly'?'মাস: ':cashPrintScope==='range'?'তারিখ পরিসীমা: ':'তারিখ: ')+cashPrintDateLabel()+'  —  আয়-ব্যয় হিসাব'"></div>
+              </div>
+              <!-- RANGE: separate daily breakdown table -->
+              <template x-if="cashPrintScope==='range'">
+                <div style="padding:2mm 3mm;">
+                  <div style="font-size:8px; font-weight:700; margin-bottom:1.5mm;">দৈনিক সারসংক্ষেপ</div>
+                  <table class="cash-inner" style="margin-bottom:3mm;">
+                    <thead><tr><th style="width:14%;">তারিখ</th><th style="width:22%;">আয়</th><th style="width:22%;">ব্যয়</th><th style="width:22%;">নিট</th></tr></thead>
+                    <tbody>
+                      <template x-for="(r,i) in cashRangeIncomeByDate().length ? cashRangeIncomeByDate() : cashRangeExpenseByDate()" :key="'rday'+i">
+                        <tr>
+                          <td style="text-align:center;" x-text="formatDate(r.date)"></td>
+                          <td style="text-align:right;" x-text="r.income>0?formatMoney(r.income)+' /=':'—'"></td>
+                          <td style="text-align:right;" x-text="r.expense>0?formatMoney(r.expense)+' /=':'—'"></td>
+                          <td style="text-align:right;" :style="r.net<0?'color:#dc2626;':''" x-text="formatMoney(r.net)+' /='"></td>
+                        </tr>
+                      </template>
+                      <tr class="cash-total">
+                        <td style="text-align:center;">মোট</td>
+                        <td style="text-align:right;" x-text="formatMoney(cashRangeIncomeTotal())+' /='"></td>
+                        <td style="text-align:right;" x-text="formatMoney(cashRangeExpenseTotal())+' /='"></td>
+                        <td style="text-align:right;" :style="cashRangeNet()<0?'color:#dc2626;':''" x-text="formatMoney(cashRangeNet())+' /='"></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </template>
+              <!-- DAILY / MONTHLY / RANGE: two-column detail -->
+              <table class="cash-outer">
+                <tr>
+                  <td class="cash-half">
+                    <div class="cash-half-head">আয়</div>
+                    <table class="cash-inner">
+                      <thead><tr><th style="width:10%;">ক্রঃ</th><th x-show="cashPrintScope==='range'" style="width:18%;">তারিখ</th><th>বিবরণ</th><th style="width:28%;">টাকা</th></tr></thead>
+                      <tbody>
+                        <template x-for="(r,i) in cashPrintIncomeRows()" :key="'inc'+i">
+                          <tr>
+                            <td style="text-align:center;" x-text="i+1"></td>
+                            <td x-show="cashPrintScope==='range'" style="text-align:center; font-size:7px;" x-text="r.date?formatDate(r.date):''"></td>
+                            <td x-text="r.label"></td>
+                            <td style="text-align:right; white-space:nowrap;" x-text="formatMoney(r.amount)+' /='"></td>
+                          </tr>
+                        </template>
+                        <tr x-show="cashPrintIncomeRows().length===0"><td :colspan="cashPrintScope==='range'?4:3" style="text-align:center; padding:6px;">— কোনো আয় নেই —</td></tr>
+                        <tr class="cash-total"><td :colspan="cashPrintScope==='range'?3:2" style="text-align:center;">মোট আয়</td><td style="text-align:right;" x-text="formatMoney(cashPrintIncomeTotal())+' /='"></td></tr>
+                        <tr><td :colspan="cashPrintScope==='range'?3:2" style="text-align:center; font-weight:700;">নিট (আয় − ব্যয়)</td><td style="text-align:right; font-weight:800;" x-text="formatMoney(cashPrintIncomeTotal()-cashPrintExpenseTotal())+' /='"></td></tr>
+                      </tbody>
+                    </table>
+                  </td>
+                  <td class="cash-half">
+                    <div class="cash-half-head">ব্যয়</div>
+                    <table class="cash-inner">
+                      <thead><tr><th style="width:10%;">ক্রঃ</th><th x-show="cashPrintScope==='range'" style="width:18%;">তারিখ</th><th>বিবরণ</th><th style="width:28%;">টাকা</th></tr></thead>
+                      <tbody>
+                        <template x-for="(r,i) in cashPrintExpenseRows()" :key="'exp'+i">
+                          <tr>
+                            <td style="text-align:center;" x-text="i+1"></td>
+                            <td x-show="cashPrintScope==='range'" style="text-align:center; font-size:7px;" x-text="r.date?formatDate(r.date):''"></td>
+                            <td x-text="r.label"></td>
+                            <td style="text-align:right; white-space:nowrap;" x-text="formatMoney(r.amount)+' /='"></td>
+                          </tr>
+                        </template>
+                        <tr x-show="cashPrintExpenseRows().length===0"><td :colspan="cashPrintScope==='range'?4:3" style="text-align:center; padding:6px;">— কোনো ব্যয় নেই —</td></tr>
+                        <tr class="cash-total"><td :colspan="cashPrintScope==='range'?3:2" style="text-align:center;">মোট ব্যয়</td><td style="text-align:right;" x-text="formatMoney(cashPrintExpenseTotal())+' /='"></td></tr>
+                        <tr><td :colspan="cashPrintScope==='range'?4:3" style="text-align:center; font-size:7px; padding:4px;">মোট</td></tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              <div style="display:flex; justify-content:space-between; font-size:7px; padding:6mm 8mm 3mm; font-weight:600;">
+                <span>ক্যাশিয়ার</span><span>ম্যানেজার</span><span x-text="'প্রিন্ট: '+ new Date().toLocaleDateString('bn-BD')"></span>
               </div>
             </div>
           </div>
@@ -5295,25 +5435,34 @@
 
     // setupRealtime: SSE subscription to /api/realtime/subscribe. Any data_change
     // event triggers the refresh callback (which re-pulls collections). Falls back
-    // to periodic polling if the stream dies.
+    // to periodic polling if the stream dies. Fast reconnect for multi-device sync.
     function setupRealtime(config, onDataChange) {
       if (typeof EventSource === 'undefined') return null;
       const url = (config.serverUrl || '').replace(/\/+$/, '') +
         '/api/realtime/subscribe?app_id=' + encodeURIComponent(config.appId || '') +
         '&api_key=' + encodeURIComponent(config.apiKey || '');
       let es = null;
+      let retryCount = 0;
+      const MAX_RETRY_WAIT = 30000;
       const connect = () => {
         try {
+          if (es) { try { es.close(); } catch(e) {} }
           es = new EventSource(url);
+          retryCount = 0;
         } catch (e) { return; }
         es.addEventListener('data_change', () => { if (onDataChange) onDataChange(); });
+        es.addEventListener('connected', () => { retryCount = 0; });
         es.onmessage = () => { if (onDataChange) onDataChange(); };
-        es.onerror = () => { /* EventSource auto-reconnects; the poll timer is the safety net */ };
+        es.onerror = () => {
+          retryCount++;
+          const wait = Math.min(1000 * Math.pow(2, retryCount), MAX_RETRY_WAIT);
+          setTimeout(() => { try { es = new EventSource(url); } catch(e){} }, wait);
+        };
       };
       connect();
       const timer = setInterval(() => {
         if (!es || es.readyState === EventSource.CLOSED) connect();
-      }, 30000);
+      }, 8000);
       return {
         close() {
           if (timer) clearInterval(timer);
@@ -5356,6 +5505,8 @@
         showCloudKey: false,
         cloudConfigOpen: false,
         serverPresets: SERVER_PRESETS,
+        _flushTimer: null,
+        _refreshTimer: null,
 
         // Modals state
         showClientModal: false,
@@ -5573,8 +5724,11 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
         showExpenseModal: false,
         editingExpenseId: null,
         expenseForm: { date: new Date().toISOString().slice(0, 10), description: '', amount: 0, note: '' },
+        cashPrintScope: 'daily',
         cashDate: new Date().toISOString().slice(0, 10),
         cashMonth: new Date().toISOString().slice(0, 7),
+        cashRangeStart: '',
+        cashRangeEnd: '',
         masterLedgerMonth: new Date().toISOString().slice(0, 7),
         masterSummaryMonth: new Date().toISOString().slice(0, 7),
         dashboardSelectedMonth: new Date().toISOString().slice(0, 7),
@@ -5701,10 +5855,10 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           this.syncStatusText = 'ক্লাউডে কানেক্ট হচ্ছে...';
           this.startCloud();
 
-          // Auto sync queue timer: flush pending writes every 3s — ৩ ডিভাইসে দ্রুত সিঙ্ক
+          // Auto sync queue timer: flush pending writes every 2s — ৩-৪ ডিভাইসে দ্রুত সিঙ্ক
           setInterval(() => {
             this.processSyncQueue();
-          }, 3000);
+          }, 2000);
 
           // Best-effort flush of in-memory pending writes when the tab closes.
           // (Cloud remains the only durable store — this just reduces data loss
@@ -6520,9 +6674,9 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
 
         // §8.3 option (খ): build a month's bill with on-demand gap-day rent accrual.
         // Days without a transaction get a synthesized row (closing kg × effective rate).
-        buildMonthlyBill(clientId, month) {
+        buildMonthlyBill(clientId, month, project) {
           const cacheKey = 'bill_' + clientId + '_' + month;
-          if (this._memoCache[cacheKey]) return this._memoCache[cacheKey];
+          if (!project && this._memoCache[cacheKey]) return this._memoCache[cacheKey];
           const client = this.clients.find(c => c.id === clientId);
           if (!client) return null;
           const snap = this.snapshots.find(s => s.clientId === clientId && s.month === month);
@@ -6539,14 +6693,18 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
                 snap.closingBalance = this.round2((snap.closingBalance || 0) + mc);
               }
             }
-            this._memoCache[cacheKey] = snap;
+            if (!project) this._memoCache[cacheKey] = snap;
             return snap;
           }
 
           const monthStart = month + '-01';
           const monthEnd = month + '-' + this.pad2(this.lastDayOfMonth(month));
           const today = this.todayStr();
-          const spanEnd = monthEnd <= today ? monthEnd : today;
+          // project=true (ক্লায়েন্ট লেজার রিপোর্ট): বর্তমান/ভবিষ্যৎ মাসকে মাস-শেষ পর্যন্ত প্রজেক্ট
+          // করে (এন্ট্রি-বিহীন দিনে শেষ-জানা স্টক × কার্যকর দরে ক্রমাগত চার্জ)। বিল জেনারেটর
+          // project ছাড়া কল করে — আগের নিয়ম (আজ পর্যন্ত) অপরিবর্তিত।
+          let spanEnd = monthEnd <= today ? monthEnd : today;
+          if (project) spanEnd = monthEnd;
           if (spanEnd < monthStart) return null;
 
           const start = this.stateAtMonthStart(clientId, month);
@@ -6568,7 +6726,9 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           // কোনো লেনদেনই না থাকলে (বিশুদ্ধ উদ্বোধনী স্টক-ধারী): প্রতিটি মাসই নিজস্ব সূচনা —
           // আগের মাসে চেইন হয় না, সাবেক = উদ্বোধনী ব্যালেন্স (0)।
           if (minDate && prevMonth >= minDate.slice(0, 7)) {
-            const prevBill = this.buildMonthlyBill(clientId, prevMonth);
+            // project হলে শুধু সত্যিকারের ভবিষ্যৎ মাসে চেইন প্রজেক্ট করা হয়;
+            // বর্তমান/অতীত মাসের বিল আসল (অপ্রজেক্টেড) থাকে।
+            const prevBill = this.buildMonthlyBill(clientId, prevMonth, project && prevMonth > this.todayStr().slice(0, 7));
             if (prevBill && prevBill.closingBalance != null && !Number.isNaN(prevBill.closingBalance)) {
               openingBalance = prevBill.closingBalance;
             }
@@ -6658,7 +6818,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
             transferOut,
             generatedAt: new Date().toISOString()
           };
-          this._memoCache[cacheKey] = result;
+          if (!project) this._memoCache[cacheKey] = result;
           return result;
         },
 
@@ -6679,6 +6839,22 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
 
         get clientRangeReportClient() {
           return this.clients.find(c => c.id === this.clientReportClientId) || null;
+        },
+
+        // রিপোর্ট হেডারে তারিখ-রেঞ্জের বদলে মাস-নাম ও সাল (যেমন: সেপ্টেম্বর / ২০২৬ ইং)।
+        get clientReportMonthLine() {
+          const f = this.clientReportFrom, t = this.clientReportTo;
+          if (!f || !t) return '';
+          const fm = this.getBengaliMonth(f), tm = this.getBengaliMonth(t);
+          return f.slice(0, 7) === t.slice(0, 7) ? fm : fm + ' হইতে ' + tm;
+        },
+
+        get clientReportYearLine() {
+          const f = this.clientReportFrom, t = this.clientReportTo;
+          if (!f || !t) return '';
+          const fy = f.slice(0, 4), ty = t.slice(0, 4);
+          const yStr = fy === ty ? this.toBnDigits(fy) : this.toBnDigits(fy) + ' হইতে ' + this.toBnDigits(ty);
+          return yStr + ' ইং';
         },
 
         // State (bags/kg/balance) just BEFORE a given date (all entries strictly before).
@@ -6712,64 +6888,65 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           if (!client || !from || !to || to < from) return null;
           const start = this.stateBeforeDate(clientId, from);
           const openingStock = { bags: start.bags, kg: start.kg };
-          // সাবেক/শুরুর ব্যালেন্স: মাসিক বিলের সাথে সঙ্গতিপূর্ণ হতে stateBeforeDate-এর বদলে
-          // বিলের ডে-রো থেকে `from` তারিখ পর্যন্ত আসল ব্যালেন্স বের করি। stateBeforeDate শুধু
-          // স্টোরড এন্ট্রি ধরে, তাই গ্যাপ-দিনের (synthesis) চার্জ হারিয়ে যায় — এতে আগের মাসের
-          // ক্লোজিং থেকে পরের মাস রিপোর্ট শুরু কোনো অংশত ব্যালেন্সে, বিলের মতো পুরো ক্লোজিংয়ে নয়।
-          let openingBalance = start.bal;
-          const todayIso = this.todayStr();
-          const curMonth = todayIso.slice(0, 7);
-          const fromMonth = from.slice(0, 7);
-          const baseBill = fromMonth <= curMonth
-            ? this.buildMonthlyBill(clientId, fromMonth)
-            : this.buildMonthlyBill(clientId, curMonth);
-          if (baseBill) {
-            if (fromMonth <= curMonth) {
-              const monthStart = fromMonth + '-01';
-              const delta = Math.round((Date.parse(from) - Date.parse(monthStart)) / 86400000);
-              if (delta <= 0) openingBalance = baseBill.openingBalance;
-              else if (baseBill.rows && baseBill.rows[delta - 1]) openingBalance = baseBill.rows[delta - 1].runningBalance;
-              else openingBalance = baseBill.closingBalance;
-            } else {
-              // ভবিষ্যৎ মাস: এখন পর্যন্ত (আজ পর্যন্ত) যে ব্যালেন্স দাঁড়িয়েছে সেটাই শুরুর ভিত্তি
-              openingBalance = baseBill.closingBalance;
-            }
+          // মাসিক বিল জেনারেটরের সব হিসাব-লজিক (ওপেনিং-চেইন, ট্রান্সফার ফোল্ড, মাসিক চার্জ,
+          // labor, দর-রো, ভবিষ্যৎ-প্রজেকশন) পেতে রেঞ্জের প্রতিটি মাস `buildMonthlyBill(..., true)`
+          // দিয়ে হুবহু বিল হিসেবে বানাই এবং [from, to] সীমায় দিন-রো জোড়া দিই।
+          const today = this.todayStr();
+          const months = [];
+          let mCur = from.slice(0, 7);
+          const mEnd = to.slice(0, 7);
+          while (mCur <= mEnd) {
+            months.push(mCur);
+            const [yy, mo] = mCur.split('-').map(Number);
+            mCur = mo === 12 ? (yy + 1) + '-01' : yy + '-' + this.pad2(mo + 1);
           }
-          let bags = start.bags, kg = start.kg, bal = openingBalance;
+          const billMap = {};
+          months.forEach(mm => { billMap[mm] = this.buildMonthlyBill(clientId, mm, true); });
 
-          // ভবিষ্যৎ দিনে দৈনিক চার্জ ধার্য করা যাবে না (PRD §৯): আজকের পরের দিনগুলোতে
-          // কোনো চার্জ/জমা আপডেট হয় না — শুধু সাবেক টাকা বয়ে যায়। তাই দিন-লুপ আজ পর্যন্ত
-          // সীমিত রাখি; ভবিষ্যৎ-পূর্ণ রেঞ্জ হলে কোনো চার্জ-রো ছাড়াই শুধু সাবেক দেখাবে।
-
-          const entries = this.ledgerEntries
-            .filter(e => e.clientId === clientId && e.date >= from && e.date <= to)
-            .sort((a, b) => a.date.localeCompare(b.date));
-          const byDate = {};
-          entries.forEach(e => { byDate[e.date] = e; });
+          // সাবেক/শুরুর ব্যালেন্স: প্রথম মাসের বিলের ডে-রো থেকে — `from` মাসের শুরুতে হলে বিলের
+          // opening (আগের মাসের ক্লোজিং + মাস-ট্রান্সফার), নাহলে `from`-এর আগের দিনের চলমান
+          // ব্যালেন্স। stateBeforeDate (শুধু স্টোরড এন্ট্রি) গ্যাপ-দিনের সিনথেসাইজড চার্জ হারায়,
+          // তাই বিলের ডে-রোই হুবহু বিলের মতো সঙ্গতিপূর্ণ।
+          let openingBalance = start.bal;
+          const fm = from.slice(0, 7);
+          const fb = billMap[fm];
+          if (fb && fb.rows && fb.rows.length) {
+            const fDelta = Math.round((Date.parse(from) - Date.parse(fm + '-01')) / 86400000);
+            if (fDelta <= 0 && fb.openingBalance != null) openingBalance = fb.openingBalance;
+            else if (fb.rows[fDelta - 1]) openingBalance = fb.rows[fDelta - 1].runningBalance;
+            else if (fb.closingBalance != null) openingBalance = fb.closingBalance;
+          }
 
           const rows = [];
-          let totalCharge = 0, totalDeposit = 0;
-          const spanEnd = to <= todayIso ? to : todayIso;
-          let cur = from;
-          while (cur <= spanEnd) {
-            const e = byDate[cur];
-            const stockIn = { bags: e ? (e.stockIn?.bags || 0) : 0, kg: e ? (e.stockIn?.kg || 0) : 0 };
-            const delivery = { bags: e ? (e.delivery?.bags || 0) : 0, kg: e ? (e.delivery?.kg || 0) : 0 };
-            const deposit = e ? (e.deposit || 0) : 0;
-            const billableBags = bags + stockIn.bags;
-            const billableKg = kg + stockIn.kg;
-            const closingStock = { bags: billableBags - delivery.bags, kg: billableKg - delivery.kg };
-            const calcRate = e ? (e.ratePerKgPerDay || this.getEffectiveRate(clientId, cur)) : this.getEffectiveRate(clientId, cur);
-            const displayRate = e ? (e.displayRatePerKgPerDay || this.getEffectiveDisplayRate(clientId, cur)) : this.getEffectiveDisplayRate(clientId, cur);
-            const charge = this.round2(billableKg * calcRate);
-            bal = this.round2(bal + charge - deposit);
-            totalCharge = this.round2(totalCharge + charge);
-            totalDeposit = this.round2(totalDeposit + deposit);
-            rows.push({ date: cur, stockIn, delivery, closingStock, ratePerKgPerDay: displayRate, calcRate, dailyCharge: charge, deposit, runningBalance: bal, synthesized: !e });
-            bags = billableBags - delivery.bags;
-            kg = billableKg - delivery.kg;
-            cur = this.addDays(cur, 1);
-          }
+          let transferIn = 0, transferOut = 0;
+          months.forEach(mm => {
+            const bill = billMap[mm];
+            if (!bill) return;
+            transferIn = this.round2(transferIn + (bill.transferIn || 0));
+            transferOut = this.round2(transferOut + (bill.transferOut || 0));
+            (bill.rows || []).filter(r => r.date >= from && r.date <= to).forEach(r => rows.push(Object.assign({}, r)));
+          });
+
+          // মোট চার্জ = অন্তর্ভুক্ত ডে-রোর চার্জ + প্রতিটি অন্তর্ভুক্ত মাসের মাসিক চার্জ (বিলের মতোই)।
+          let totalCharge = this.round2(rows.reduce((s, r) => s + (r.dailyCharge || 0), 0));
+          let totalDeposit = this.round2(rows.reduce((s, r) => s + (r.deposit || 0), 0));
+          let totalDeliveryKg = 0;
+          rows.forEach(r => { totalDeliveryKg += (r.delivery?.kg || 0); });
+          const inclMonths = {};
+          const lastRowOfMonth = {};
+          rows.forEach((r, i) => { inclMonths[r.date.slice(0, 7)] = true; lastRowOfMonth[r.date.slice(0, 7)] = i; });
+          months.forEach(mm => {
+            const bill = billMap[mm];
+            if (!inclMonths[mm] || !bill || !bill.monthlyCharge) return;
+            totalCharge = this.round2(totalCharge + bill.monthlyCharge);
+            // আংশিক মাসে (বিলের শেষ-ডে রো বাদ পড়লে) মাসিক চার্জ শেষ অন্তর্ভুক্ত রোয়ের চলমান
+            // ব্যালেন্সে ভাঁজ করি যাতে মোট বিলের সাথে মেলে; পূর্ণ মাসে বিল নিজেই শেষ রোয়ে রেখেছে।
+            const li = lastRowOfMonth[mm];
+            const monthEndDate = mm + '-' + this.pad2(this.lastDayOfMonth(mm));
+            if (to < monthEndDate && li != null && rows[li]) {
+              rows[li].runningBalance = this.round2((rows[li].runningBalance || 0) + bill.monthlyCharge);
+            }
+          });
 
           // Merge identical consecutive displayed rates into one cell (rowspan).
           for (let i = 0; i < rows.length; i++) {
@@ -6780,6 +6957,27 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
             i += span - 1;
           }
 
+          let closingStock = { bags: 0, kg: 0 };
+          let closingBalance = openingBalance;
+          if (rows.length) {
+            const last = rows[rows.length - 1];
+            closingStock = { bags: last.closingStock.bags, kg: last.closingStock.kg };
+            // রেঞ্জের শেষ মাস পূর্ণ হলে বিলের closing (ট্রান্সফার+মাসিক চার্জসহ অথরিটেটিভ);
+            // আংশিক হলে শেষ অন্তর্ভুক্ত রোয়ের চলমান ব্যালেন্স (ফোল্ডসহ)।
+            const lastM = to.slice(0, 7);
+            const lb = billMap[lastM];
+            const lEnd = lastM + '-' + this.pad2(this.lastDayOfMonth(lastM));
+            if (to >= lEnd && lb && lb.closingBalance != null && !Number.isNaN(lb.closingBalance)) {
+              closingBalance = lb.closingBalance;
+            } else {
+              closingBalance = last.runningBalance;
+            }
+          } else if (billMap[to.slice(0, 7)]) {
+            const lb = billMap[to.slice(0, 7)];
+            closingStock = lb.closingStock;
+            closingBalance = lb.closingBalance;
+          }
+
           return {
             clientId,
             from,
@@ -6787,10 +6985,14 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
             openingStock,
             openingBalance,
             rows,
-            closingStock: { bags, kg },
-            closingBalance: bal,
+            closingStock,
+            closingBalance,
             totalCharge,
-            totalDeposit
+            totalDeposit,
+            totalDeliveryKg,
+            laborCharge: this.round2(totalDeliveryKg * (this.settings.laborRatePerKg || 0)),
+            transferIn,
+            transferOut
           };
         },
 
@@ -7006,29 +7208,52 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           this.withSaving('ক্লায়েন্ট সেভ হচ্ছে...', () => {
             let savedClient = null;
             if (this.editingClient) {
-              // ফিল্ডে আসল কার্যকর দর দেখায় (রেঞ্জ/গ্লোবাল মিলিয়ে); ব্যবহারকারী যদি
-              // বদলায়, সেটা সক্রিয় দর-রেঞ্জেও (write-through) ও ক্লায়েন্টের বেসে প্রয়োগ হয়।
+              // দর পরিবর্তনের নিয়ম (ফ্রিজ): পুরোনো মাস পুরোনো দরে স্থির থাকে,
+              // পরিবর্তন থেকে চলতি মাস শুরু করে নতুন দর (নতুন রেঞ্জ) প্রয়োগ হয়।
+              // সিস্টেম কখনো পুরোনো মাস নতুন দরে পুনরায় হিসাব করে না।
               const effCalc = this.getEffectiveRate(this.editingClient.id, this.todayStr());
               const effDisp = this.getEffectiveDisplayRate(this.editingClient.id, this.todayStr());
               const formCalc = this.clientForm.ratePerKgPerDay ? Number(this.clientForm.ratePerKgPerDay) : null;
               const formDisp = this.clientForm.displayRatePerKgPerDay ? Number(this.clientForm.displayRatePerKgPerDay) : null;
               const calcChanged = formCalc !== null && this.round2(formCalc) !== this.round2(effCalc);
               const dispChanged = (formDisp !== null && this.round2(formDisp) !== this.round2(effDisp)) || (formDisp === null && effDisp !== null);
+              const todayKey = this.todayStr();
+              const curMonthStart = todayKey.slice(0, 7) + '-01';
+              const prevMonthEnd = this.addDays(curMonthStart, -1);
               const activeRate = this.activeClientRateToday(this.editingClient.id);
-              if (activeRate && (calcChanged || dispChanged)) {
-                if (calcChanged) activeRate.rate = formCalc;
-                if (dispChanged) activeRate.displayRate = formDisp;
-                this.enqueueRecordSync('rates', activeRate);
+              if (calcChanged || dispChanged) {
+                // চলতি-সক্রিয় client-রেঞ্জ (যদি আগের মাস থেকে খোলা থাকে) চলতি মাসের
+                // আগে বন্ধ করে দিই — ফলে পুরোনো মাস তাদের নিজের দরে ফ্রিজ থাকে।
+                if (activeRate && activeRate.scope === 'client' &&
+                    activeRate.effectiveFrom < curMonthStart &&
+                    (activeRate.effectiveTo == null || activeRate.effectiveTo >= curMonthStart)) {
+                  activeRate.effectiveTo = prevMonthEnd;
+                  this.enqueueRecordSync('rates', activeRate);
+                }
+                // নতুন দর → চলতি মাস থেকে শুরু করে নতুন রেঞ্জ (পুরোনো মাস ঢেকে না)।
+                const newRate = {
+                  id: 'rate_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                  scope: 'client',
+                  clientId: this.editingClient.id,
+                  rate: calcChanged ? formCalc : (effCalc || 0.13),
+                  displayRate: dispChanged ? formDisp : (effDisp || effCalc || 0.13),
+                  effectiveFrom: curMonthStart,
+                  effectiveTo: null,
+                  createdAt: new Date().toISOString()
+                };
+                this.rates.push(newRate);
+                this.rates.sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
+                this.enqueueRecordSync('rates', newRate);
               }
+              // client-এর বেস দর রাখি মূল (আগের) হিসেবে — যাতে পুরোনো দিন (যার কোনো রেঞ্জ
+              // নেই) মূল দরেই পড়ে, নতুন দরে নয়। আজকের কার্যকর দর নতুন রেঞ্জ থেকেই আসে।
               Object.assign(this.editingClient, {
                 clientId: this.clientForm.clientId,
                 name: this.clientForm.name,
                 address: this.clientForm.address,
                 mobile: this.clientForm.mobile,
                 openingStock: { bags: Number(this.clientForm.openingBags), kg: Number(this.clientForm.openingKg) },
-                openingBalance: Number(this.clientForm.openingBalance),
-                ratePerKgPerDay: (this.editingClient.ratePerKgPerDay != null || calcChanged) ? formCalc : null,
-                displayRatePerKgPerDay: (this.editingClient.displayRatePerKgPerDay != null || dispChanged) ? formDisp : null
+                openingBalance: Number(this.clientForm.openingBalance)
               });
               savedClient = this.editingClient;
               this.recalculateClientLedger(this.editingClient.id);
@@ -7655,19 +7880,79 @@ selectClient(clientId) {
           this.enqueueRecordSync('expenses', ex);
         },
 
+        cashPrintIncomeRows(){
+          if(this.cashPrintScope==='monthly'){
+            return this.cashMonthSummary(this.cashMonth).filter(r=>r.income>0).map(r=>({label: this.formatDate(r.date), amount: r.income}));
+          }
+          if(this.cashPrintScope==='range'){
+            return this.cashRangeIncomeRows();
+          }
+          return this.depositsOn(this.cashDate).map(p=>({label:'['+this.getClientCode(p.clientId)+'] '+(this.clients.find(c=>c.id===p.clientId)?.name||''), amount: Number(p.amount||0)}));
+        },
+        cashPrintExpenseRows(){
+          if(this.cashPrintScope==='monthly'){
+            return this.cashMonthSummary(this.cashMonth).filter(r=>r.expense>0).map(r=>({label: this.formatDate(r.date), amount: r.expense}));
+          }
+          if(this.cashPrintScope==='range'){
+            return this.cashRangeExpenseRows();
+          }
+          return this.expensesOn(this.cashDate).map(e=>({label: e.description + (e.note?' — '+e.note:''), amount: Number(e.amount||0)}));
+        },
+        cashPrintIncomeTotal(){ return this.cashPrintIncomeRows().reduce((s,r)=>s+r.amount,0); },
+        cashPrintExpenseTotal(){ return this.cashPrintExpenseRows().reduce((s,r)=>s+r.amount,0); },
+        cashRangeDates(){
+          if(!this.cashRangeStart || !this.cashRangeEnd) return [];
+          const out=[]; let s=new Date(this.cashRangeStart); let e=new Date(this.cashRangeEnd);
+          while(s<=e){ out.push(s.toISOString().slice(0,10)); s.setDate(s.getDate()+1); }
+          return out;
+        },
+        cashRangeIncomeRows(){
+          const rows=[];
+          this.cashRangeDates().forEach(date=>{
+            this.depositsOn(date).forEach(p=>{
+              rows.push({date, label:'['+this.getClientCode(p.clientId)+'] '+(this.clients.find(c=>c.id===p.clientId)?.name||''), amount: Number(p.amount||0)});
+            });
+          });
+          return rows;
+        },
+        cashRangeExpenseRows(){
+          const rows=[];
+          this.cashRangeDates().forEach(date=>{
+            this.expensesOn(date).forEach(e=>{
+              rows.push({date, label:e.description+(e.note?' — '+e.note:''), amount: Number(e.amount||0)});
+            });
+          });
+          return rows;
+        },
+        cashRangeIncomeByDate(){
+          return this.cashRangeDates().map(d=>({date:d, income:this.incomeOn(d), expense:this.expenseOn(d), net:this.netOn(d)})).filter(r=>r.income>0);
+        },
+        cashRangeExpenseByDate(){
+          return this.cashRangeDates().map(d=>({date:d, income:this.incomeOn(d), expense:this.expenseOn(d), net:this.netOn(d)})).filter(r=>r.expense>0);
+        },
+        cashRangeIncomeTotal(){ return this.cashRangeDates().reduce((s,d)=>s+this.incomeOn(d),0); },
+        cashRangeExpenseTotal(){ return this.cashRangeDates().reduce((s,d)=>s+this.expenseOn(d),0); },
+        cashRangeNet(){ return this.cashRangeIncomeTotal()-this.cashRangeExpenseTotal(); },
+        cashPrintDateLabel(){
+          if(this.cashPrintScope==='range') return this.cashRangeStart+' থেকে '+this.cashRangeEnd;
+          return this.cashPrintScope==='monthly' ? this.cashMonth : this.cashDate;
+        },
         printDailyCash(scope) {
-          const landscape = scope === 'monthly';
-          const style = document.createElement('style');
-          style.id = 'cash-print-style';
-          style.textContent = landscape
-            ? '@page { size: A4 landscape !important; margin: 6mm 8mm !important; }'
-            : '@page { size: A4 portrait !important; margin: 5mm 6mm !important; }';
-          document.head.appendChild(style);
-          window.print();
-          setTimeout(() => {
-            const el = document.getElementById('cash-print-style');
-            if (el) el.remove();
-          }, 1500);
+          this.cashPrintScope = scope || 'daily';
+          if(this.cashPrintScope==='range' && (!this.cashRangeStart || !this.cashRangeEnd)){
+            alert('তারিখ পরিসীমা নির্বাচন করুন (শুরু ও শেষ তারিখ)'); return;
+          }
+          if(this.cashPrintScope==='range' && this.cashRangeStart > this.cashRangeEnd){
+            alert('শুরুর তারিখ শেষের তারিখের আগে হতে হবে'); return;
+          }
+          this.$nextTick(()=>{
+            const style = document.createElement('style');
+            style.id = 'cash-print-style';
+            style.textContent = '@page { size: A4 portrait !important; margin:5mm 6mm !important; }';
+            document.head.appendChild(style);
+            window.print();
+            setTimeout(() => { const el = document.getElementById('cash-print-style'); if (el) el.remove(); }, 1500);
+          });
         },
 
         // Bulk Entry Logic
@@ -9546,6 +9831,20 @@ selectClient(clientId) {
           }
         },
 
+        // Quick shortcut: set report from/to to current (offset=0) or next (offset=1) month.
+        setReportMonthRange(offset) {
+          const now = new Date();
+          const y = now.getFullYear();
+          const m = now.getMonth() + offset;
+          const y0 = new Date(y, 0, 1).getFullYear();
+          const mm = ((m % 12) + 12) % 12; // 0-based month index
+          const yy = y + Math.floor(m / 12);
+          const start = yy + '-' + this.pad2(mm + 1) + '-01';
+          const end = yy + '-' + this.pad2(mm + 1) + '-' + this.pad2(new Date(yy, mm + 1, 0).getDate());
+          this.clientReportFrom = start;
+          this.clientReportTo = end;
+        },
+
         // Monthly Bill Google Sheets-like Direct Editor — freeform with box resizing
         initBillLayout() {
           const d = { headerWidth: 17, clientGap: 40, colWidths: [12, 5, 6, 5, 6, 5, 6, 11, 14, 11, 19], colAligns: ['center','center','center','center','center','center','center','center','center','center','center'], headerAlign: 'center', summaryAlign: 'right', borderColor: '#000000', borderWeight: 0.9, headerTop: 3.5, clientScale: 100, headerClientGap: 5, tableGap: 5, summaryGap: 5, boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'center', summary:'center', clientId:'center'}, columnOrder: [0,1,2,3,4,5,6,7,8,9,10], boxBorders: {header:{top:true,right:true,bottom:true,left:true}, clientLeft:{top:true,right:true,bottom:true,left:true}, clientRight:{top:true,right:true,bottom:true,left:true}, table:{top:true,right:true,bottom:true,left:true}, summary:{top:true,right:true,bottom:true,left:true}, clientId:{top:true,right:true,bottom:true,left:true}}, boxSizes: {header:{w:100,h:0,zoom:1,thick:false}, clientLeft:{w:50,h:0,zoom:1,thick:false}, clientRight:{w:50,h:0,zoom:1,thick:false}, table:{w:100,h:0,zoom:1,thick:false}, summary:{w:62.5,h:0,zoom:1,thick:false}, clientId:{w:40,h:0,zoom:1,thick:false}}, boxPositions: {header:{x:0,y:0}, clientLeft:{x:0,y:0}, clientRight:{x:0,y:0}, table:{x:0,y:0}, summary:{x:0,y:0}}, billScale: 100, billWidth: 100, billFontSize: 8.5, numberLang: 'en', cellBorders: {}, cellAligns: {}, cellValigns: {}, cellRowspans: {}, textDesign: {headerTitle:{size:'20px', weight:900, color:'#000000'}} };
@@ -10645,12 +10944,17 @@ selectClient(clientId) {
         },
 
         // Queue a create (no server id yet) or update (has server id) for a record.
+        // Optimistic immediate flush with 400ms debounce so rapid writes batch together.
         enqueueRecordSync(collection, rec) {
           if (!this.cloudQueue || !rec) return;
           if (rec._cloudId) {
             this.cloudQueue.enqueue({ op: 'update', collection, id: rec._cloudId, localId: rec.id });
           } else {
             this.cloudQueue.enqueue({ op: 'create', collection, localId: rec.id });
+          }
+          if (!this.suppressSync && this.cloudConnected) {
+            clearTimeout(this._flushTimer);
+            this._flushTimer = setTimeout(() => { if(this.cloudQueue) this.cloudQueue.flush(); }, 400);
           }
         },
 
@@ -10709,10 +11013,8 @@ selectClient(clientId) {
             this.ensureDefaultStores();
             this.showToastMsg('ডেটা লোড সম্পন্ন ✓', 'success', 2000);
             this.realtimeConn = setupRealtime(cfg, () => {
-              // Ignore SSE events caused by our own writes: the local copy is
-              // already authoritative, and re-pulling right after a POST would
-              // re-import the just-created server record as a duplicate.
-              if (Date.now() - (this.lastOwnWrite || 0) > 8000) this.refreshFromCloud();
+              // Ignore SSE events caused by our own writes.
+              if (Date.now() - (this.lastOwnWrite || 0) > 2000) this.refreshFromCloud();
             });
             this.cloudConnected = true;
             this.syncStatus = 'synced';
@@ -10810,14 +11112,19 @@ selectClient(clientId) {
 
         async refreshFromCloud() {
           if (!this.cloudDb) return;
-          try {
-            await this.pullAndMerge();
-            this.syncStatus = 'synced';
-            this.syncStatusText = 'অনলাইন সিঙ্কড';
-          } catch (e) {
-            this.syncStatus = 'offline';
-            this.syncStatusText = 'অফলাইন মোড (সিঙ্ক ব্যর্থ)';
-          }
+          clearTimeout(this._refreshTimer);
+          this._refreshTimer = setTimeout(async () => {
+            try {
+              this.syncStatus = 'syncing';
+              this.syncStatusText = 'ডেটা আপডেট হচ্ছে...';
+              await this.pullAndMerge();
+              this.syncStatus = 'synced';
+              this.syncStatusText = 'অনলাইন সিঙ্কড';
+            } catch (e) {
+              this.syncStatus = 'offline';
+              this.syncStatusText = 'অফলাইন মোড (সিঙ্ক ব্যর্থ)';
+            }
+          }, 400);
         },
 
         // Merge one collection: server is source of truth; local wins only when it
@@ -10959,14 +11266,14 @@ selectClient(clientId) {
         },
 
         processSyncQueue() {
-          // Automatic quiet queue processing (flushes pending writes every 15s)
+          // Auto flush every 2s + immediate flush on wake.
           if (this.cloudQueue) {
             this.cloudQueue.flush();
             if (!this.cloudConnected) this.tryReconnect();
           }
         },
 
-        // If we booted offline, quietly probe the server every 15s and resume
+        // If we booted offline, quietly probe the server and resume
         // full sync (pull + SSE) as soon as it comes back.
         async tryReconnect() {
           if (this.reconnecting || !this.cloudDb) return;
@@ -10976,12 +11283,13 @@ selectClient(clientId) {
             await this.pullAndMerge();
             this.ensureAdminUser();
             this.ensureDefaultStores();
+            if (this.realtimeConn) { try { this.realtimeConn.close(); } catch(e){} }
             this.realtimeConn = setupRealtime({
               serverUrl: this.settings.cloudServerUrl,
               appId: this.settings.cloudAppId,
               apiKey: this.settings.cloudApiKey
             }, () => {
-              if (Date.now() - (this.lastOwnWrite || 0) > 8000) this.refreshFromCloud();
+              if (Date.now() - (this.lastOwnWrite || 0) > 2000) this.refreshFromCloud();
             });
             this.cloudConnected = true;
             this.syncStatus = 'synced';
