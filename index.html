@@ -51,9 +51,9 @@
 
   <!-- Firebase SDKs (Modular CDN) -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, writeBatch, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     // FIREBASE CONFIGURATION
     const firebaseConfig = {
@@ -70,7 +70,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    window.firebaseApp = { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, writeBatch };
+    window.firebaseApp = { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, writeBatch, onSnapshot };
     window.__firebaseReady = true;
     window.dispatchEvent(new CustomEvent('firebase-ready'));
   </script>
@@ -475,16 +475,11 @@
     <span x-text="toastText"></span>
   </div>
 
-  <!-- Firestore write-denied warning -->
-  <div x-cloak x-show="firestoreWriteDenied" x-transition.opacity class="fixed top-0 inset-x-0 z-[60] px-4 py-2 bg-amber-500 text-white text-center text-xs font-semibold shadow-lg">
-    ⚠️ সতর্কতা: ডেটা সেভ/ডিলিট হচ্ছে না! <span x-text="writeErrorHint"></span>
-  </div>
-
   <!-- Global Loading Overlay -->
   <div x-show="isLoading" x-cloak class="fixed inset-0 z-50 flex items-center justify-center frosted-glass bg-black/60 backdrop-blur-sm">
     <div class="bg-white dark:bg-zinc-800 p-6 rounded-2xl shadow-xl flex items-center space-x-4">
       <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-apple-blue"></div>
-      <p class="text-apple-secondary">কাজটি সম্পন্ন হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...</p>
+      <p class="text-apple-secondary" x-text="loadingMessage"></p>
     </div>
   </div>
 
@@ -495,7 +490,7 @@
         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
       </div>
       <h2 class="text-xl font-bold mb-1" x-text="settings.businessName || 'এম আর ট্রেডিং কোল্ড স্টোরেজ'"></h2>
-      <p class="text-xs text-apple-secondary mb-6">ADATA CLOUD</p>
+      <p class="text-xs text-apple-secondary mb-6">ফায়ারবেস অথেন্টিকেশন সিস্টেম</p>
       <form @submit.prevent="loginUser()">
         <input type="email" x-model="loginForm.email" placeholder="ইমেইল (Email)" autocomplete="email" required class="w-full text-center py-3 px-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-zinc-800 mb-3 focus:outline-none focus:ring-2 focus:ring-apple-blue">
         <input type="password" x-model="loginForm.password" placeholder="পাসওয়ার্ড (Password)" autocomplete="current-password" required class="w-full text-center py-3 px-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-zinc-800 mb-4 focus:outline-none focus:ring-2 focus:ring-apple-blue">
@@ -5039,12 +5034,11 @@
       return {
         // App State
         isLoading: false,
+        loadingMessage: 'কাজটি সম্পন্ন হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...',
         _loadInFlight: false,
-        firestoreWriteDenied: false,
-        writeErrorHint: '',
-        loadErrorHint: '',
-        _writeTestError: null,
         _syncedHashes: {},
+        _rtListeners: [],
+        _dataLoaded: false,
         activeTab: 'dashboard',
         isLocked: true,
         darkMode: false,
@@ -5390,17 +5384,20 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
                 this.currentUserId = user.uid;
                 this.isLocked = false;
                 this.isLoading = true;
+                this.loadingMessage = 'ডেটা লোড হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...';
                 try {
                   await this.loadDataFromFirestore();
                   await this.ensureUserProfile(user);
-                  await this.verifyFirestoreWrite();
                 } finally {
                   this.isLoading = false;
+                  this.loadingMessage = 'কাজটি সম্পন্ন হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...';
                 }
               } else {
                 this.currentUserId = null;
                 this.isLocked = true;
                 this.clients = [];
+                this._unsubscribeAll();
+                this._dataLoaded = false;
               }
             });
           };
@@ -5495,12 +5492,13 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
             this.currentUserId = user.uid;
             this.isLocked = false;
             this.isLoading = true;
+            this.loadingMessage = 'ডেটা লোড হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...';
             try {
               await this.loadDataFromFirestore();
               await this.ensureUserProfile(user);
-              await this.verifyFirestoreWrite();
             } finally {
               this.isLoading = false;
+              this.loadingMessage = 'কাজটি সম্পন্ন হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...';
             }
           } catch (e) {
             this.loginError = true;
@@ -5514,6 +5512,8 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           this.isLocked = true;
           this.loginForm = { email: '', password: '' };
           this.loginError = false;
+          this._unsubscribeAll();
+          this._dataLoaded = false;
           window.firebaseApp.signOut(window.firebaseApp.auth);
         },
 
@@ -5529,6 +5529,16 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
         },
 
 
+        _settingsForFirestore() {
+          // Print/Bill layout ডিজাইন কন্ট্রোল ফায়ারস্টোরে যায় না — শুধু লোকাল (localStorage)।
+          const s = { ...this.settings };
+          delete s.billLayout;
+          delete s.masterLayout;
+          delete s.masterSummaryLayout;
+          delete s.printConfig;
+          return s;
+        },
+
         // ===== CENTRAL PERSISTENCE LAYER =====
         _hashOf(rec) {
           try { return JSON.stringify(rec); } catch (e) { return ''; }
@@ -5537,13 +5547,13 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
         _hintForError(code) {
           const c = code ? String(code) : 'unknown';
           if (c === 'not-found' || c === 'failed-precondition') {
-            return { hint: 'Firestore ডাটাবেস তৈরি হয়নি! Firebase Console → Firestore Database → "Create database" (Native mode) → Rules Publish করুন।', msg: 'Firestore ডাটাবেস সঠিক নেই! Console-এ পরীক্ষা করুন।', cat: 'db' };
+            return { hint: 'ডাটাবেস তৈরি হয়নি! সিস্টেম সেটআপ পরীক্ষা করুন।', msg: 'ডাটাবেস সঠিক নেই! পরীক্ষা করুন।', cat: 'db' };
           }
           if (c === 'permission-denied' || c === 'unauthenticated') {
-            return { hint: 'অনুমতি নেই! Firebase Console → Firestore Database → Rules-এ allow read, write: if request.auth != null; Publish করুন।', msg: 'সংরক্ষণ অনুমোদিত হয়নি! Firestore Rules Publish করুন।', cat: 'rules' };
+            return { hint: 'অনুমতি নেই! অনুমতি সেটিংস পরীক্ষা করুন।', msg: 'সংরক্ষণ অনুমোদিত হয়নি! পরে আবার চেষ্টা করুন।', cat: 'rules' };
           }
           if (c === 'resource-exhausted' || c === 'unavailable' || c === 'deadline-exceeded' || c === 'firebase-timeout') {
-            return { hint: 'Firebase-এ অস্থায়ী সীমা (কোটা/ব্যবস্থ) — Rules নয়। কয়েক মিনিট পর আবার চেষ্টা করুন, অথবা Console-এ Blaze প্ল্যান চালু করুন।', msg: 'Firebase-এ অস্থায়ী কোটা সীমা! কিছুক্ষণ পর আবার চেষ্টা করুন।', cat: 'quota' };
+            return { hint: 'অস্থায়ী ব্যবস্থা-সীমা! কয়েক মিনিট পর আবার চেষ্টা করুন।', msg: 'অস্থায়ী ব্যবস্থা-সীমা! কিছুক্ষণ পর আবার চেষ্টা করুন।', cat: 'quota' };
           }
           return { hint: 'ইন্টারনেট সংযোগ পরীক্ষা করুন।', msg: 'সংরক্ষণ ব্যর্থ হয়েছে! ইন্টারনেট সংযোগ পরীক্ষা করুন।', cat: 'net' };
         },
@@ -5592,8 +5602,6 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           } catch (e) {
             console.error("Firestore save [", collection, "] error:", e);
             const mapped = this._hintForError(e && e.code);
-            this.firestoreWriteDenied = true;
-            this.writeErrorHint = mapped.hint;
             this.showToastMsg(mapped.msg, 'error', 8000);
           }
         },
@@ -5612,64 +5620,78 @@ async deleteFromFirestore(collection, id) {
           } catch (e) {
             console.error("Firestore delete error:", e);
             const mapped = this._hintForError(e && e.code);
-            this.firestoreWriteDenied = true;
-            this.writeErrorHint = mapped.hint;
-            this.showToastMsg('ডিলিট ব্যর্থ হয়েছে! ' + mapped.hint, 'error', 8000);
+            this.showToastMsg(mapped.msg, 'error', 8000);
           }
         },
 
         // Firestore-এ লিখন চলছে কিনা স্ব-পরীক্ষা — Rules ঠিক আছে কিনা এমনিই ধরা পড়বে
-        // (ব্যবহারকারীকে কোনো কারিগরি বার্তা না দেখিয়ে)।
-        async testFirestoreWrite() {
-          if (!window.firebaseApp) return false;
-          this._writeTestError = null;
-          try {
-            const testRef = window.firebaseApp.doc(window.firebaseApp.collection(window.firebaseApp.db, '_sys'), 'wr_test');
-            await this._withTimeout(window.firebaseApp.setDoc(testRef, { ok: true, at: Date.now() }, { merge: true }), 10000);
-            await this._withTimeout(window.firebaseApp.deleteDoc(testRef), 10000);
-            return true;
-          } catch (e) {
-            console.error("Firestore WRITE test failed:", e);
-            this._writeTestError = (e && e.code) ? String(e.code) : 'unknown';
-            return false;
-          }
-        },
 
-        async verifyFirestoreWrite() {
-          const ok = await this.testFirestoreWrite();
-          this.firestoreWriteDenied = !ok;
-          if (!ok) {
-            const mapped = this._hintForError(this._writeTestError);
-            this.writeErrorHint = mapped.hint;
-            this.showToastMsg(mapped.msg, 'error', 8000);
-          } else {
-            this.writeErrorHint = '';
-          }
-          return ok;
-        },
-
-async loadDataFromFirestore() {
+        // Firestore ডেটার রিয়েল-টাইম সাবস্ক্রিপশন। একটা কালেকশনে ডেটা বদলালে (নিজে বা
+        // অন্য ডিভাইসে) সাথে সাথে এখানে হালনাগাদ হয়ে যায় — রিফ্রেশ বা আবার লগইন লাগে না।
+        // firstLoad: প্রথম লোডে isLoading=true গ্লোবাল ওভারলে দেখাবে; পরে শুধু নিঃশব্দে
+        // আপডেট হবে ব্যবহারকারী না বুঝেই।
+        async loadDataFromFirestore() {
           if (!window.firebaseApp) return;
           if (this._loadInFlight) return;
           this._loadInFlight = true;
+
+          const collections = ['clients', 'ledger_entries', 'payments', 'rates', 'monthly_bill_snapshots', 'expenses', 'users', 'stores', 'challan_records', 'settings'];
+
+          // আগের সাবস্ক্রিপশন বন্ধ করে নতুন বসাই (রিলগইন/পুনরায় লোড হলে ডুপ্লিকেট এড়াতে)।
+          this._unsubscribeAll();
+
+          const applyCollection = (col, docs) => {
+            const data = docs.map(d => ({ ...d.data(), id: d.id }));
+            const fieldMap = { ledger_entries: 'ledgerEntries', monthly_bill_snapshots: 'snapshots', challan_records: 'challanRecords' };
+            const field = fieldMap[col] || col;
+            if (col === 'settings') {
+              const serverData = data[0] || {};
+              ['billLayout','masterLayout','masterSummaryLayout','printConfig'].forEach(k => delete serverData[k]);
+              this.settings = { ...this.settings, ...serverData };
+              delete this.settings.billLayout;
+              delete this.settings.masterLayout;
+              delete this.settings.masterSummaryLayout;
+              delete this.settings.printConfig;
+            } else {
+              this[field] = data;
+            }
+            this._noteSyncedForCollection(col, data);
+          };
+
           try {
-            const collections = ['clients', 'ledger_entries', 'payments', 'rates', 'monthly_bill_snapshots', 'expenses', 'users', 'stores', 'challan_records', 'settings'];
-            const promises = collections.map(col => window.firebaseApp.getDocs(window.firebaseApp.collection(window.firebaseApp.db, col)));
-            // কোটা/নেটওয়ার্ক ব্যস্ত হলে ২০ সেকেন্ডের মধ্যে লোড ব্যর্থ হয়ে বাংলা বার্তা দেখাবে —
-            // লোডিং স্ক্রিন আর আটকে থাকবে না।
-            const snapshots = await this._withTimeout(Promise.all(promises), 20000);
-            
-            collections.forEach((col, index) => {
-              const data = snapshots[index].docs.map(doc => ({ ...doc.data(), id: doc.id }));
-              // Map Firestore collection names to Alpine state properties
-              const fieldMap = {
-                ledger_entries: 'ledgerEntries',
-                monthly_bill_snapshots: 'snapshots',
-                challan_records: 'challanRecords'
-              };
-              const field = fieldMap[col] || col;
-              this[field] = col === 'settings' ? (data[0] || this.settings) : data;
+            // কালেকশনগুলো আলাদা আলাদা listener দিয়ে চালু করি।
+            const firstSnapPromises = [];
+            collections.forEach(col => {
+              const q = window.firebaseApp.collection(window.firebaseApp.db, col);
+              let resolved = false;
+              const p = new Promise(res => {
+                let unsub = null;
+                try {
+                  unsub = window.firebaseApp.onSnapshot(q,
+                    (snap) => {
+                      if (!this._dataLoaded) {
+                        // প্রথম snapshot-এর জন্য resolve (প্রাথমিক লোড শেষ হয়)
+                        if (!resolved) { resolved = true; res(snap); }
+                      }
+                      this._applySnapshot(col, snap, applyCollection);
+                    },
+                    (err) => {
+                      console.error("Firestore snapshot [", col, "] error:", err);
+                      if (!resolved) { resolved = true; res(null); }
+                    }
+                  );
+                } catch (err) {
+                  console.error("Firestore snapshot setup [", col, "] error:", err);
+                  if (!resolved) { resolved = true; res(null); }
+                }
+                if (unsub) this._rtListeners.push(unsub);
+              });
+              firstSnapPromises.push(p);
             });
+
+            // প্রতিটা কালেকশনের প্রথম snapshot (বা ত্রুটি) পর্যন্ত অপেক্ষা করি —
+            // যাতে লগইনের পর লোডিং ওভারলে শেষ করার আগেই সব ডেটা চলে আসে।
+            await this._withTimeout(Promise.all(firstSnapPromises), 25000);
 
             // এখন পর্যন্ত যা Firestore-এ আছে তা "সিঙ্কড" চিহ্নিত করি — যেন এই লগইনে
             // কিছুই অযথা আবার লেখা না হয়। recalculateAllClients() তারপর শুধু সেসব রেকর্ড
@@ -5681,15 +5703,39 @@ async loadDataFromFirestore() {
             if (this.clients.length > 0 && !this.selectedClientId) {
               this.selectedClientId = this.clients[0].id;
             }
+            this._dataLoaded = true;
           } catch (e) {
-            console.error("Firestore load error:", e);
+            console.error("Firestore realtime load error:", e);
             const mapped = this._hintForError(e && e.code);
-            this.loadErrorHint = mapped.hint;
             this.showToastMsg(mapped.msg, 'error', 10000);
           } finally {
             this._loadInFlight = false;
           }
         },
+
+        // এক কালেকশনের snapshot-কে স্টেটে প্রয়োগ করে। রিয়েল-টাইম আপডেটে ডেরাইভড
+        // (হিসাব-হীন) ফিল্ডগুলো লোকালে আবার হিসাব করার দরকার হয় না — শুধু কাঁচা ডেটা বদলাই।
+        _applySnapshot(col, snap, applyCollection) {
+          applyCollection(col, snap.docs);
+        },
+
+        // প্রতিটা কালেকশনের রেকর্ডগুলো সিঙ্কড চিহ্নিত করি (রিয়েল-টাইম আপডেটের পরেও
+        // অপ্রয়োজনীয় লেখা এড়াতে) — তবে শুধু প্রথম লোডের পরে, কারণ পরে আসা
+        // snapshot-এর হ্যাশ আর মিলবে না।
+        _noteSyncedForCollection(col, data) {
+          if (!this._dataLoaded) return;
+          this._syncedHashes = this._syncedHashes || {};
+          this._syncedHashes[col] = this._syncedHashes[col] || {};
+          (data || []).forEach(rec => {
+            if (rec && rec.id != null) this._syncedHashes[col][rec.id] = this._hashOf(rec);
+          });
+        },
+
+        _unsubscribeAll() {
+          (this._rtListeners || []).forEach(u => { try { u(); } catch (e) {} });
+          this._rtListeners = [];
+        },
+
 
         // Ensure the logged-in Firebase user has a matching user record in
         // Firestore. First ever login (or a user created directly in the
@@ -7943,7 +7989,7 @@ selectClient(clientId) {
             const next = maxCh + 1;
             this.settings.nextChallanNo = next;
             this.bulkStartChallan = next;
-            this.saveToFirestore('settings', this.settings);
+            this.saveToFirestore('settings', this._settingsForFirestore());
           }
           alert(count + ' টি ক্লায়েন্টের এন্ট্রি সফলভাবে সংরক্ষণ করা হয়েছে!');
           this.initBulkRows(true);
@@ -8050,20 +8096,20 @@ selectClient(clientId) {
           this.challanPreviewName = ('challan-' + (record.challanNo || 'img') + '-' + (record.clientCode || record.clientId || '') + '.jpg').replace(/[^a-zA-Z0-9._-]/g, '_');
         },
 
+        // চ্যালান ছবি — per record image। বেস৬৪ ফায়ারস্টোর রেকর্ডে সেভ (Storage ছাড়াই সব ফায়ারস্টোর দিয়ে)।
+
         challanClosePreview() {
           this.challanPreviewImage = '';
           this.challanPreviewName = '';
         },
 
-        challanDownloadImage() {
+challanDownloadImage() {
           const url = this.challanPreviewImage;
           const name = this.challanPreviewName || 'challan-image';
           if (!url) return;
           const a = document.createElement('a');
-          a.href = url;
-          a.download = name;
-          document.body.appendChild(a);
-          a.click();
+          a.href = url; a.download = name;
+          document.body.appendChild(a); a.click();
           document.body.removeChild(a);
         },
 
@@ -8097,7 +8143,7 @@ selectClient(clientId) {
           // keep header in sync to next free number
           this.bulkStartChallan = cur;
           this.settings.nextChallanNo = cur;
-          this.saveToFirestore('settings', this.settings);
+          this.saveToFirestore('settings', this._settingsForFirestore());
         },
 
         // ===== টাকা জমা রেজিস্টার (Payment Bulk) =====
@@ -9633,28 +9679,26 @@ selectClient(clientId) {
             if (this.settings.billLayout.numberLang == null) this.settings.billLayout.numberLang = 'en';
           }
         },
-        saveBillLayout() {
-          if (this.settings.billLayout) {
-            this.settings.updatedAt = Date.now();
-            try { localStorage.setItem('mrt_billLayout', JSON.stringify(this.settings.billLayout)); } catch(e) {}
-            this.saveToFirestore('settings', this.settings);
-          }
-          if (this._billSaveTimer) clearTimeout(this._billSaveTimer);
-          this._billSaveTimer = setTimeout(() => this.saveSettings && this.saveSettings(), 300);
-        },
+saveBillLayout() {
+           if (this.settings.billLayout) {
+             this.settings.updatedAt = Date.now();
+             try { localStorage.setItem('mrt_billLayout', JSON.stringify(this.settings.billLayout)); } catch(e) {}
+           }
+           if (this._billSaveTimer) clearTimeout(this._billSaveTimer);
+           this._billSaveTimer = setTimeout(() => this.saveSettings && this.saveSettings(), 300);
+         },
         resetBillLayout() {
           this.settings.billLayout = { headerWidth: 17, clientGap: 40, colWidths: [12, 5, 6, 5, 6, 5, 6, 11, 14, 11, 19], colAligns: ['center','center','center','center','center','center','center','center','center','center','center'], headerAlign: 'center', summaryAlign: 'right', borderColor: '#000000', borderWeight: 0.9, headerTop: 3.5, clientScale: 100, headerClientGap: 5, tableGap: 5, summaryGap: 5, boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'center', summary:'center', clientId:'center'}, columnOrder: [0,1,2,3,4,5,6,7,8,9,10], boxBorders: {header:{top:true,right:true,bottom:true,left:true}, clientLeft:{top:true,right:true,bottom:true,left:true}, clientRight:{top:true,right:true,bottom:true,left:true}, table:{top:true,right:true,bottom:true,left:true}, summary:{top:true,right:true,bottom:true,left:true}, clientId:{top:true,right:true,bottom:true,left:true}}, boxSizes: {header:{w:100,h:0,zoom:1,thick:false}, clientLeft:{w:50,h:0,zoom:1,thick:false}, clientRight:{w:50,h:0,zoom:1,thick:false}, table:{w:100,h:0,zoom:1,thick:false}, summary:{w:62.5,h:0,zoom:1,thick:false}, clientId:{w:40,h:0,zoom:1,thick:false}}, boxPositions: {header:{x:0,y:0}, clientLeft:{x:0,y:0}, clientRight:{x:0,y:0}, table:{x:0,y:0}, summary:{x:0,y:0}}, billScale: 100, billWidth: 100, billFontSize: 8.5, numberLang: 'en', cellBorders: {}, cellAligns: {}, cellValigns: {}, cellRowspans: {}, textDesign: {headerTitle:{size:'20px', weight:900, color:'#000000'}} };
           this.saveBillLayout();
         },
-        saveMasterLayout() {
-          if (this.settings.masterLayout) {
-            this.settings.updatedAt = Date.now();
-            try { localStorage.setItem('mrt_masterLayout', JSON.stringify(this.settings.masterLayout)); } catch(e) {}
-            this.saveToFirestore('settings', this.settings);
-          }
-          if (this._masterSaveTimer) clearTimeout(this._masterSaveTimer);
-          this._masterSaveTimer = setTimeout(() => this.saveSettings && this.saveSettings(), 300);
-        },
+saveMasterLayout() {
+           if (this.settings.masterLayout) {
+             this.settings.updatedAt = Date.now();
+             try { localStorage.setItem('mrt_masterLayout', JSON.stringify(this.settings.masterLayout)); } catch(e) {}
+           }
+           if (this._masterSaveTimer) clearTimeout(this._masterSaveTimer);
+           this._masterSaveTimer = setTimeout(() => this.saveSettings && this.saveSettings(), 300);
+         },
         initMasterLayout() {
           let saved = null;
           try { const s = localStorage.getItem('mrt_masterLayout'); if (s) saved = JSON.parse(s); } catch(e) {}
@@ -9790,15 +9834,14 @@ selectClient(clientId) {
           if (this.settings.masterSummaryLayout.numberLang == null) this.settings.masterSummaryLayout.numberLang = 'en';
           this.saveMasterSummaryLayout();
         },
-        saveMasterSummaryLayout() {
-          if (this.settings.masterSummaryLayout) {
-            this.settings.updatedAt = Date.now();
-            try { localStorage.setItem('mrt_masterSummaryLayout', JSON.stringify(this.settings.masterSummaryLayout)); } catch(e) {}
-            this.saveToFirestore('settings', this.settings);
-          }
-          if (this._masterSummarySaveTimer) clearTimeout(this._masterSummarySaveTimer);
-          this._masterSummarySaveTimer = setTimeout(() => this.saveSettings && this.saveSettings(), 300);
-        },
+saveMasterSummaryLayout() {
+           if (this.settings.masterSummaryLayout) {
+             this.settings.updatedAt = Date.now();
+             try { localStorage.setItem('mrt_masterSummaryLayout', JSON.stringify(this.settings.masterSummaryLayout)); } catch(e) {}
+           }
+           if (this._masterSummarySaveTimer) clearTimeout(this._masterSummarySaveTimer);
+           this._masterSummarySaveTimer = setTimeout(() => this.saveSettings && this.saveSettings(), 300);
+         },
         resetMasterSummaryLayout() {
           this.settings.masterSummaryLayout = {
             borderColor: '#000000',
@@ -10491,7 +10534,7 @@ selectClient(clientId) {
           if (this.isSaving) return;
           this.withSaving('সেটিংস সেভ হচ্ছে...', async () => {
             this.recalculateAllClients();
-            this.saveToFirestore('settings', this.settings);
+            this.saveToFirestore('settings', this._settingsForFirestore());
           });
         },
 
@@ -10500,7 +10543,7 @@ selectClient(clientId) {
           if (!this.currentUser) return;
           if (this.isSaving) return;
           this.withSaving('সেটিংস সেভ হচ্ছে...', async () => {
-            this.saveToFirestore('settings', this.settings);
+            this.saveToFirestore('settings', this._settingsForFirestore());
           });
         },
 
@@ -10551,7 +10594,7 @@ selectClient(clientId) {
           enq('users', this.users);
             enq('stores', this.stores);
             enq('challan_records', this.challanRecords);
-          if (!this._isSynced('settings', this.settings)) this.saveToFirestore('settings', this.settings);
+          if (!this._isSynced('settings', this.settings)) this.saveToFirestore('settings', this._settingsForFirestore());
         },
 
         exportJSONBackup() {
