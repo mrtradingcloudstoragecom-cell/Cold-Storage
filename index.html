@@ -47,7 +47,33 @@
   </script>
 
   <!-- Alpine.js CDN -->
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.10/dist/cdn.min.js"></script>
+
+  <!-- Firebase SDKs (Modular CDN) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // FIREBASE CONFIGURATION
+    const firebaseConfig = {
+      apiKey: "AIzaSyCM5dVfKJwHxJEV909dnyonPRaCcxrEQEk",
+      authDomain: "databas-77ad9.firebaseapp.com",
+      projectId: "databas-77ad9",
+      storageBucket: "databas-77ad9.firebasestorage.app",
+      messagingSenderId: "872254954140",
+      appId: "1:872254954140:web:8ef2060be37c55e6deab59",
+      measurementId: "G-YQ2Y5R0B9E"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    window.firebaseApp = { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, writeBatch };
+    window.__firebaseReady = true;
+    window.dispatchEvent(new CustomEvent('firebase-ready'));
+  </script>
 
   <style>
     [x-cloak] { display: none !important; }
@@ -69,78 +95,6 @@
       -webkit-backdrop-filter: blur(20px);
     }
 
-    /* ===== Adata Cloud — dark system theme (always dark) ===== */
-    .cloud-page {
-      background: #1c1c1e;
-      border: 1px solid #3a3a3c;
-      border-radius: 1.25rem;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-    }
-    .cloud-card {
-      background: #2c2c2e;
-      border: 1px solid #3a3a3c;
-      border-radius: 1rem;
-      transition: background 0.2s ease, border-color 0.2s ease;
-    }
-    .cloud-card:hover {
-      background: #323236;
-      border-color: #48484a;
-    }
-    .cloud-card-active {
-      border-color: #0a84ff;
-      background: #323236;
-    }
-    .cloud-input {
-      width: 100%;
-      padding: 10px 14px;
-      border-radius: 0.8rem;
-      font-size: 12px;
-      background: #1c1c1e;
-      border: 1px solid #3a3a3c;
-      color: #f5f5f7;
-      outline: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      color-scheme: dark;
-    }
-    .cloud-input::placeholder { color: #8e8e93; }
-    .cloud-input:focus {
-      border-color: #4a90e2;
-      box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.25);
-    }
-    .cloud-select { appearance: none; cursor: pointer; }
-    .cloud-select option { background: #2c2c2e; color: #f5f5f7; }
-    .cloud-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      width: 100%;
-      padding: 12px 18px;
-      border-radius: 0.9rem;
-      font-size: 12px;
-      font-weight: 600;
-      border: 1px solid #48484a;
-      color: #f5f5f7;
-      background: #3a3a3c;
-      transition: all 0.2s ease;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .cloud-btn-sm {
-      width: auto;
-      padding: 9px 14px;
-      font-size: 11px;
-      border-radius: 0.75rem;
-    }
-    .cloud-btn:hover { background: #48484a; border-color: #5a5a5e; }
-    .cloud-btn-primary {
-      background: #0a84ff;
-      border: none;
-      color: #fff;
-    }
-    .cloud-btn-primary:hover { background: #0a6fd6; }
-    .cloud-btn-danger { background: #ff453a; border: none; color: #fff; }
-    .cloud-btn-danger:hover { background: #d63a30; }
     /* Save / Loading Toast */
     .save-toast {
       position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
@@ -514,37 +468,47 @@
   <div class="sync-bar" :class="isSaving ? 'active' : 'idle'" :style="isSaving ? 'opacity:1' : 'opacity:0'"></div>
 
   <!-- Save/Loading Toast -->
-  <div x-show="showToast" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-4" class="save-toast" :class="toastType">
+  <div x-show="showToast" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-4" class="save-toast" :class="toastType">
     <div class="spinner" x-show="toastType === 'saving' || toastType === 'loading'"></div>
     <svg x-show="toastType === 'success'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
     <svg x-show="toastType === 'error'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
     <span x-text="toastText"></span>
   </div>
 
+  <!-- Firestore write-denied warning -->
+  <div x-cloak x-show="firestoreWriteDenied" x-transition.opacity class="fixed top-0 inset-x-0 z-[60] px-4 py-2 bg-amber-500 text-white text-center text-xs font-semibold shadow-lg">
+    ⚠️ সতর্কতা: ডেটা সেভ/ডিলিট হচ্ছে না! <span x-text="writeErrorHint"></span>
+  </div>
+
+  <!-- Global Loading Overlay -->
+  <div x-show="isLoading" x-cloak class="fixed inset-0 z-50 flex items-center justify-center frosted-glass bg-black/60 backdrop-blur-sm">
+    <div class="bg-white dark:bg-zinc-800 p-6 rounded-2xl shadow-xl flex items-center space-x-4">
+      <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-apple-blue"></div>
+      <p class="text-apple-secondary">কাজটি সম্পন্ন হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...</p>
+    </div>
+  </div>
+
   <!-- Login / Security Overlay (role-based access control) -->
-  <div x-show="isLocked" x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center frosted-glass bg-black/40 backdrop-blur-md">
+  <div x-show="isLocked" x-cloak x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center frosted-glass bg-black backdrop-blur-md">
     <div class="bg-white dark:bg-apple-darkCard p-8 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200/50 dark:border-gray-700 text-center">
       <div class="w-14 h-14 bg-apple-blue/10 text-apple-blue rounded-full flex items-center justify-center mx-auto mb-4">
         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
       </div>
       <h2 class="text-xl font-bold mb-1" x-text="settings.businessName || 'এম আর ট্রেডিং কোল্ড স্টোরেজ'"></h2>
-      <p class="text-xs text-apple-secondary mb-6"></p>
-      <p x-show="syncStatus === 'syncing'" class="text-[11px] text-apple-orange mb-3">ডেটা ক্লাউড থেকে লোড হচ্ছে...</p>
-      <p x-show="syncStatus === 'offline'" class="text-[11px] text-apple-red mb-3">ক্লাউড সার্ভার অনলাইন নয় — ডেটা লোড করা যাচ্ছে না</p>
+      <p class="text-xs text-apple-secondary mb-6">ADATA CLOUD</p>
       <form @submit.prevent="loginUser()">
-        <input type="text" x-model="loginForm.username" placeholder="ইউজারনেম" autocomplete="username" class="w-full text-center py-3 px-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-zinc-800 mb-3 focus:outline-none focus:ring-2 focus:ring-apple-blue">
-        <input type="password" x-model="loginForm.password" placeholder="পাসওয়ার্ড" autocomplete="current-password" class="w-full text-center py-3 px-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-zinc-800 mb-4 focus:outline-none focus:ring-2 focus:ring-apple-blue">
-        <p x-show="loginError" class="text-xs text-apple-red mb-3">ভুল ইউজারনেম বা পাসওয়ার্ড! আবার চেষ্টা করুন।</p>
-        <button type="submit" :disabled="users.length === 0" class="w-full py-3 bg-apple-blue text-white rounded-xl font-medium hover:bg-blue-600 transition duration-200 disabled:opacity-50">লগইন করুন</button>
+        <input type="email" x-model="loginForm.email" placeholder="ইমেইল (Email)" autocomplete="email" required class="w-full text-center py-3 px-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-zinc-800 mb-3 focus:outline-none focus:ring-2 focus:ring-apple-blue">
+        <input type="password" x-model="loginForm.password" placeholder="পাসওয়ার্ড (Password)" autocomplete="current-password" required class="w-full text-center py-3 px-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-zinc-800 mb-4 focus:outline-none focus:ring-2 focus:ring-apple-blue">
+        <p x-show="loginError" class="text-xs text-apple-red mb-3" x-text="loginErrorMessage || 'ভুল ইমেইল বা পাসওয়ার্ড! আবার চেষ্টা করুন।'"></p>
+        <button type="submit" :disabled="isLoggingIn" class="w-full py-3 bg-apple-blue text-white rounded-xl font-medium hover:bg-blue-600 transition duration-200 disabled:opacity-50">
+          <span x-show="!isLoggingIn">লগইন করুন</span>
+          <span x-show="isLoggingIn">লগইন হচ্ছে...</span>
+        </button>
       </form>
-      <p x-show="adminDefaultPassword" class="text-[11px] text-apple-secondary mt-4 leading-relaxed">
-        প্রথম চালু: <span class="font-semibold text-apple-blue">admin / admin1234@#</span><br>
-        লগইন করে সেটিংস → ইউজার ম্যানেজমেন্টে পাসওয়ার্ড বদলান।
-      </p>
     </div>
   </div>
 
-  <div class="flex h-screen overflow-hidden">
+  <div class="flex h-screen overflow-hidden" x-show="!isLocked" x-cloak>
 
     <!-- Sidebar Navigation -->
     <aside :class="sidebarCollapsed ? 'w-16' : 'w-64'" class="frosted-glass border-r border-gray-200/80 dark:border-gray-800 flex flex-col shrink-0 no-print z-20 transition-all duration-200 h-screen sticky top-0 overflow-hidden">
@@ -588,12 +552,8 @@
         </nav>
       </div>
 
-      <!-- Minimal Footer Sync Indicator -->
+      <!-- Minimal Footer -->
       <div class="p-3 border-t border-gray-200/60 dark:border-gray-800/80 flex justify-center shrink-0">
-        <span class="relative flex h-2 w-2">
-          <span x-show="syncStatus === 'synced'" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-apple-green opacity-75"></span>
-          <span :class="{ 'bg-apple-green': syncStatus === 'synced', 'bg-apple-orange': syncStatus === 'syncing', 'bg-apple-red': syncStatus === 'offline' }" class="relative inline-flex rounded-full h-2 w-2"></span>
-        </span>
       </div>
     </aside>
 
@@ -609,18 +569,8 @@
         <!-- Global Quick Actions & Date -->
         <div class="flex items-center space-x-2.5">
 
-          <!-- Sync Status -->
-          <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-gray-100 dark:bg-zinc-800 border border-gray-200/60 dark:border-gray-700/60">
-            <span class="relative flex h-2 w-2 shrink-0">
-              <span x-show="syncStatus === 'synced'" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-apple-green opacity-75"></span>
-              <span :class="{ 'bg-apple-green': syncStatus === 'synced', 'bg-apple-orange': syncStatus === 'syncing', 'bg-apple-red': syncStatus === 'offline' }" class="relative inline-flex rounded-full h-2 w-2"></span>
-            </span>
-            <span class="text-[10px] font-medium text-apple-secondary hidden lg:inline" x-text="syncStatusText"></span>
-          </div>
-          <button @click="triggerManualSync()" title="ম্যানুয়াল সিঙ্ক" class="p-1.5 text-gray-400 hover:text-apple-blue hover:bg-apple-blue/10 rounded-lg transition">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-          </button>
-
+          <!-- Sync Status (Removed) -->
+          
           <button x-show="can('clients')" @click="openClientModal()" class="px-3 py-2 bg-apple-blue text-white rounded-xl text-xs font-medium hover:bg-blue-600 transition flex items-center space-x-1.5 shadow-sm">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             <span>নতুন ক্লায়েন্ট</span>
@@ -765,10 +715,8 @@
                         <text x="25" y="108" text-anchor="end" font-size="7" fill="#6b7280">50</text>
                         <line x1="30" y1="125" x2="410" y2="125" stroke="#374151" stroke-width="0.7"/>
                         <text x="25" y="128" text-anchor="end" font-size="7" fill="#6b7280">0</text>
-                        <!-- Bars — generated from ledger daily bags -->
-                        <template x-for="(d,i) in dashboardHistogramBars" :key="i">
-                          <rect :x="30 + i * (380/dashboardHistogramBars.length) + 1" :y="125 - Math.max(pctOf(d.bags, dashboardHistogramMax)*1.0, 2)" :width="Math.max(380/dashboardHistogramBars.length - 1.5, 1.5)" :height="Math.max(pctOf(d.bags, dashboardHistogramMax)*1.0, 2)" fill="#6a9e8e" rx="1"/>
-                        </template>
+                        <!-- Bars — innerHTML (SVG-inner Alpine loops unreliable) -->
+                        <g x-html="dashboardHistogramSvg"></g>
                       </svg>
                       <div class="flex justify-between text-[6px] text-gray-500 mt-1 ml-[30px] overflow-hidden">
                         <template x-for="d in dashboardHistogramBars" :key="d.date">
@@ -785,9 +733,7 @@
                   <div class="flex items-start gap-2">
                     <div class="relative flex-1 flex justify-center">
                       <svg viewBox="0 0 120 120" class="w-[160px] h-[160px]">
-                        <template x-for="(s,i) in dashboardPieData" :key="s.label">
-                          <path :d="s.path" :fill="s.color" stroke="white" stroke-width="0.5"/>
-                        </template>
+                        <g x-html="dashboardPieSvg"></g>
                       </svg>
                       <!-- labels with lines like reference -->
                       <div class="absolute inset-0 pointer-events-none">
@@ -1266,7 +1212,7 @@
                         <td class="py-3 px-3 text-center space-x-1 whitespace-nowrap">
                           <template x-if="editingLedgerDateId === row.id">
                             <span class="inline-flex items-center gap-1">
-                              <button @click="saveLedgerEntry(row.id)" class="p-0.5 text-apple-green hover:scale-110 transition" title="সংরক্ষণ">
+                              <button @click="saveLedgerEntryInline(row.id)" class="p-0.5 text-apple-green hover:scale-110 transition" title="সংরক্ষণ">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 13l4 4L19 7"/></svg>
                               </button>
                               <button @click="cancelLedgerEdit()" class="p-0.5 text-gray-400 hover:text-apple-secondary transition" title="বাতিল">
@@ -2064,7 +2010,7 @@
           </div>
 
           <!-- Print Area (off-screen) -->
-          <div id="warehouse-print-area" style="position:fixed;top:-9999px;left:0;width:100%;z-index:-1;background:#fff;padding:25px 30px;" x-show="warehouseReportGenerated">
+          <div id="warehouse-print-area" style="position:fixed;top:-9999px;left:0;width:100%;z-index:-1;background:#fff;padding:25px 30px;" x-show="warehouseReportGenerated" x-cloak>
             <div style="font-family:Arial,sans-serif;max-width:100%;color:#1a1a1a;">
 
               <!-- Header -->
@@ -4163,161 +4109,7 @@
           </div>
         </div>
 
-        <!-- 11. SETTINGS TAB -->
-        <!-- CLOUD SERVER CONFIGURATION TAB -->
-        <div x-show="activeTab === 'cloud'" x-cloak>
-          <div class="space-y-6">
-            <div class="cloud-page p-6 sm:p-8">
 
-              <!-- HERO — Logo + Status -->
-              <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-                <div class="flex items-center gap-4 min-w-0">
-                  <div class="w-12 h-12 rounded-xl bg-[#3A3A3C] flex items-center justify-center flex-none">
-                    <svg class="w-6 h-6 text-apple-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 1.096A4.001 4.001 0 003 15z"/></svg>
-                  </div>
-                  <div class="min-w-0">
-                    <img src="https://i.postimg.cc/XNCZ3F7W/Chat-GPT-Image-Aug-18-2026-08-58-49-PM.png" alt="M.R." class="h-9 w-9 rounded-lg object-cover">
-                    <p class="text-[11.5px] text-gray-400 mt-1.5">মাল্টি-ডিভাইস ডেটা সিঙ্কের জন্য সার্ভার সংযোগ ও কনফিগারেশন</p>
-                  </div>
-                </div>
-                <div class="flex items-center space-x-3 flex-none self-start lg:self-auto px-4 py-3 rounded-xl bg-[#2C2C2E] border border-[#3A3A3C]">
-                  <span class="relative flex h-2.5 w-2.5">
-                    <span x-show="syncStatus !== 'offline'" class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" :class="syncStatus === 'synced' ? 'bg-apple-green' : 'bg-apple-orange'"></span>
-                    <span class="relative inline-flex rounded-full h-2.5 w-2.5" :class="{
-                      'bg-apple-green': syncStatus === 'synced',
-                      'bg-apple-orange': syncStatus === 'syncing',
-                      'bg-apple-red': syncStatus === 'offline'
-                    }"></span>
-                  </span>
-                  <div>
-                    <p class="text-[10px] text-gray-500 font-medium leading-tight">সিঙ্ক স্ট্যাটাস</p>
-                    <p class="text-xs font-semibold leading-tight text-gray-100" x-text="syncStatusText"></p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- সার্ভার সংযোগ OPTION (click to open the systems) -->
-              <button @click="cloudConfigOpen = !cloudConfigOpen" type="button"
-                class="mt-6 w-full cloud-card p-5 sm:p-6 text-left flex items-center justify-between gap-4 group"
-                :class="cloudConfigOpen ? 'cloud-card-active' : ''">
-                <div class="flex items-center gap-4 min-w-0">
-                  <div class="w-12 h-12 rounded-xl bg-[#3A3A3C] text-apple-blue flex items-center justify-center flex-none">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 1.096A4.001 4.001 0 003 15z"/></svg>
-                  </div>
-                  <div class="min-w-0">
-                    <div class="flex items-center gap-2.5 flex-wrap">
-                      <h3 class="text-base font-semibold text-gray-100">সার্ভার সংযোগ</h3>
-                      <span class="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-apple-blue/10 text-apple-blue">Multi-Device Sync</span>
-                    </div>
-                    <p class="text-[11.5px] text-gray-500 mt-1 truncate">সংযুক্ত সার্ভার: <span class="text-gray-300 font-medium" x-text="settings.cloudServerUrl || 'কোনো সার্ভার নেই'"></span></p>
-                  </div>
-                </div>
-                <div class="flex items-center space-x-4 flex-none">
-                  <span class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-[#2C2C2E] border border-[#3A3A3C]">
-                    <span class="relative flex h-2 w-2">
-                      <span x-show="syncStatus !== 'offline'" class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" :class="syncStatus === 'synced' ? 'bg-apple-green' : 'bg-apple-orange'"></span>
-                      <span class="relative inline-flex rounded-full h-2 w-2" :class="{
-                        'bg-apple-green': syncStatus === 'synced',
-                        'bg-apple-orange': syncStatus === 'syncing',
-                        'bg-apple-red': syncStatus === 'offline'
-                      }"></span>
-                    </span>
-                    <span class="text-[11px] font-semibold text-gray-200" x-text="syncStatusText"></span>
-                  </span>
-                  <svg :class="cloudConfigOpen ? 'rotate-180' : ''" class="w-5 h-5 text-gray-500 transition-transform duration-300 group-hover:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                </div>
-              </button>
-
-              <!-- SYSTEMS (open when সার্ভার সংযোগ clicked) -->
-              <div x-show="cloudConfigOpen"
-                x-transition:enter="transition ease-out duration-300"
-                x-transition:enter-start="opacity-0 -translate-y-2"
-                x-transition:enter-end="opacity-100 translate-y-0"
-                class="mt-6 space-y-6">
-
-              <!-- SERVER CONFIGURATION (opens when সার্ভার সংযোগ clicked) -->
-              <div class="cloud-card p-6">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                  <div class="flex items-start gap-3">
-                    <div class="w-9 h-9 rounded-lg bg-[#3A3A3C] text-apple-blue flex items-center justify-center flex-none">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>
-                    </div>
-                    <div>
-                      <h3 class="text-base font-semibold text-gray-100">Server configuration</h3>
-                      <p class="text-[11px] text-gray-500 mt-0.5">Select server, set URL and credentials</p>
-                    </div>
-                  </div>
-                  <span class="text-[11px] px-2.5 py-1 rounded-full font-medium bg-apple-blue/10 text-apple-blue">Multi-Device Sync</span>
-                </div>
-
-                <div class="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                  <div>
-                    <label class="block text-gray-400 mb-1.5 font-medium">Select server:</label>
-                    <select @change="setServerUrlFromPreset($event)" class="cloud-input cloud-select font-mono text-[12px]">
-                      <option value="">— Select preset —</option>
-                      <template x-for="p in serverPresets" :key="p.url">
-                        <option :value="p.url" x-text="p.label" :selected="settings.cloudServerUrl === p.url"></option>
-                      </template>
-                    </select>
-                    <p class="text-[10px] text-gray-500 mt-1.5">Once selected, the server will change and sync.</p>
-                  </div>
-                  <div class="sm:col-span-2">
-                    <label class="block text-gray-400 mb-1.5 font-medium">Server Endpoint URL:</label>
-                    <input type="text" x-model="settings.cloudServerUrl" placeholder="https://api.adata.cloud/v1" class="cloud-input font-mono text-[12px]">
-                  </div>
-                </div>
-
-                <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div>
-                    <label class="block text-gray-400 mb-1.5 font-medium">App ID:</label>
-                    <input type="text" x-model="settings.cloudAppId" placeholder="your-app-id" class="cloud-input font-mono text-[12px]">
-                  </div>
-                  <div>
-                    <label class="block text-gray-400 mb-1.5 font-medium">API Key:</label>
-                    <div class="relative">
-                      <input :type="showCloudKey ? 'text' : 'password'" x-model="settings.cloudApiKey" placeholder="••••••••••••••••" class="cloud-input font-mono text-[12px]" style="padding-right:44px;">
-                      <button @click="showCloudKey = !showCloudKey" type="button" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-200 transition" :title="showCloudKey ? 'API Key লুকান' : 'API Key দেখান'">
-                        <svg x-show="!showCloudKey" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm-12.542 0C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                        <svg x-show="showCloudKey" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="mt-5 pt-4 border-t border-[#3A3A3C] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div class="flex items-center space-x-2">
-                    <span class="relative flex h-2.5 w-2.5">
-                      <span x-show="syncStatus !== 'offline'" class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" :class="syncStatus === 'synced' ? 'bg-apple-green' : 'bg-apple-orange'"></span>
-                      <span class="relative inline-flex rounded-full h-2.5 w-2.5" :class="{
-                        'bg-apple-green': syncStatus === 'synced',
-                        'bg-apple-orange': syncStatus === 'syncing',
-                        'bg-apple-red': syncStatus === 'offline'
-                      }"></span>
-                    </span>
-                    <span class="text-[11px] font-medium text-gray-400" x-text="syncStatusText"></span>
-                  </div>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <button @click="testCloudConnection()" class="cloud-btn cloud-btn-sm">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                      কানেকশন টেস্ট
-                    </button>
-                    <button @click="triggerManualSync()" class="cloud-btn cloud-btn-sm">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                      এখনই সিঙ্ক
-                    </button>
-                    <button @click="saveCloudConfig()" :disabled="isSaving" :class="isSaving ? 'btn-loading' : ''" class="cloud-btn cloud-btn-sm cloud-btn-primary">
-                      <svg x-show="!isSaving" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                      <span x-show="isSaving" class="spinner" style="width:12px;height:12px;border-width:1.5px;"></span>
-                      <span x-text="isSaving ? 'সেভ হচ্ছে...' : 'কনফিগারেশন সেভ করুন'"></span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              </div>
-            </div>
-          </div>
-        </div>
 
         <!-- SETTINGS TAB -->
         <div x-show="activeTab === 'settings'" x-cloak>
@@ -4552,7 +4344,7 @@
               <div class="flex justify-between items-center">
                 <div>
                   <h3 class="text-base font-semibold">ইউজার ম্যানেজমেন্ট (এডমিন)</h3>
-                  <p class="text-[11px] text-apple-secondary mt-0.5">এডমিন নতুন ম্যানেজার/ইউজার তৈরি করেন এবং তাদের অনুমতি নিয়ন্ত্রণ করেন। ম্যানেজার শুধু দেওয়া অনুমতির কাজই করতে পারবেন।</p>
+                  <p class="text-[11px] text-apple-secondary mt-0.5">এডমিন নতুন ইউজার (ম্যানেজার/ভিউয়ার) তৈরি করেন। ম্যানেজার শুধু দেওয়া অনুমতির কাজই করতে পারবেন; ভিউয়ার শুধু দেখতে পারবেন — কোনো এন্ট্রি, এডিট বা ডিলিট করতে পারবেন না।</p>
                 </div>
                 <button @click="openUserModal()" class="px-4 py-2 bg-apple-blue text-white text-xs font-medium rounded-xl hover:bg-blue-600 transition shadow-sm flex items-center space-x-1.5">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -4564,7 +4356,7 @@
                 <table class="w-full text-xs text-left">
                   <thead>
                     <tr class="border-b border-gray-200 dark:border-gray-700 text-apple-secondary">
-                      <th class="py-2.5 pr-3">ইউজারনেম</th>
+                      <th class="py-2.5 pr-3">ইমেইল</th>
                       <th class="py-2.5 pr-3">নাম</th>
                       <th class="py-2.5 pr-3">রোল</th>
                       <th class="py-2.5 pr-3">অনুমতি</th>
@@ -4574,10 +4366,10 @@
                   <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                     <template x-for="u in users" :key="u.id">
                       <tr>
-                        <td class="py-2.5 pr-3 font-bold text-apple-blue" x-text="u.username"></td>
+                        <td class="py-2.5 pr-3 font-bold text-apple-blue" x-text="u.username || u.email"></td>
                         <td class="py-2.5 pr-3" x-text="u.fullName || '-'"></td>
                         <td class="py-2.5 pr-3">
-                          <span :class="u.role === 'admin' ? 'bg-apple-red/10 text-apple-red' : 'bg-apple-blue/10 text-apple-blue'" class="px-2 py-0.5 rounded-full text-[10px] font-semibold" x-text="u.role === 'admin' ? 'এডমিন' : 'ম্যানেজার'"></span>
+                          <span :class="u.role === 'admin' ? 'bg-apple-red/10 text-apple-red' : (u.role === 'viewer' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-apple-blue/10 text-apple-blue')" class="px-2 py-0.5 rounded-full text-[10px] font-semibold" x-text="u.role === 'admin' ? 'এডমিন' : (u.role === 'viewer' ? 'ভিউয়ার' : 'ম্যানেজার')"></span>
                         </td>
                         <td class="py-2.5 pr-3 text-apple-secondary max-w-[280px]" x-text="userPermissionSummary(u)"></td>
                         <td class="py-2.5 text-right space-x-1 whitespace-nowrap">
@@ -4837,7 +4629,7 @@
   <!-- MODALS CONTAINER -->
 
   <!-- Modal 1: Client Add/Edit Modal -->
-  <div x-show="showClientModal" x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center frosted-glass bg-black/40 backdrop-blur-sm p-4 no-print">
+  <div x-show="showClientModal" x-cloak x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center frosted-glass bg-black/40 backdrop-blur-sm p-4 no-print">
     <div @click.away="showClientModal = false" :class="editingClient ? 'max-w-2xl' : 'max-w-lg'" class="bg-white dark:bg-apple-darkCard rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full flex flex-col max-h-[90vh]">
       <div class="flex justify-between items-center border-b pb-3 px-6 py-4 dark:border-gray-800 shrink-0">
         <h3 class="text-base font-semibold" x-text="editingClient ? 'ক্লায়েন্ট সম্পাদনা' : 'নতুন ক্লায়েন্ট যোগ করুন'"></h3>
@@ -5004,7 +4796,7 @@
   </div>
 
   <!-- Modal 2: Single Ledger Transaction Entry Modal -->
-  <div x-show="showEntryModal" x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center frosted-glass bg-black/40 backdrop-blur-sm p-4 no-print">
+  <div x-show="showEntryModal" x-cloak x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center frosted-glass bg-black/40 backdrop-blur-sm p-4 no-print">
     <div @click.away="showEntryModal = false" class="bg-white dark:bg-apple-darkCard rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md p-6 space-y-4">
       <div class="flex justify-between items-center border-b pb-3 dark:border-gray-800">
         <h3 class="text-base font-semibold" x-text="editingEntryId ? 'দৈনিক এন্ট্রি সম্পাদনা' : 'নতুন দৈনিক স্টক / লেনদেন এন্ট্রি'"></h3>
@@ -5060,7 +4852,7 @@
   </div>
 
   <!-- Modal 3: Payment Entry Modal -->
-  <div x-show="showPaymentModal" x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center frosted-glass bg-black/40 backdrop-blur-sm p-4 no-print">
+  <div x-show="showPaymentModal" x-cloak x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center frosted-glass bg-black/40 backdrop-blur-sm p-4 no-print">
     <div @click.away="showPaymentModal = false" class="bg-white dark:bg-apple-darkCard rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md p-6 space-y-4">
       <div class="flex justify-between items-center border-b pb-3 dark:border-gray-800">
         <h3 class="text-base font-semibold" x-text="editingPaymentId ? 'টাকা জমা সম্পাদনা' : 'টাকা জমা গ্রহণ এন্ট্রি'"></h3>
@@ -5114,7 +4906,7 @@
   </div>
 
   <!-- Modal 3.5: Expense Add/Edit Modal -->
-  <div x-show="showExpenseModal" x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center frosted-glass bg-black/40 backdrop-blur-sm p-4 no-print">
+  <div x-show="showExpenseModal" x-cloak x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center frosted-glass bg-black/40 backdrop-blur-sm p-4 no-print">
     <div @click.away="showExpenseModal = false" class="bg-white dark:bg-apple-darkCard rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md p-6 space-y-4">
       <div class="flex justify-between items-center border-b pb-3 dark:border-gray-800">
         <h3 class="text-base font-semibold" x-text="editingExpenseId ? 'খরচ সম্পাদনা' : 'নতুন খরচ এন্ট্রি'"></h3>
@@ -5154,7 +4946,7 @@
   </div>
 
   <!-- Modal 4: User Add/Edit Modal (Admin Only) -->
-  <div x-show="showUserModal" x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center frosted-glass bg-black/40 backdrop-blur-sm p-4 no-print">
+  <div x-show="showUserModal" x-cloak x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center frosted-glass bg-black/40 backdrop-blur-sm p-4 no-print">
     <div @click.away="showUserModal = false" class="bg-white dark:bg-apple-darkCard rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md p-6 space-y-4">
       <div class="flex justify-between items-center border-b pb-3 dark:border-gray-800">
         <h3 class="text-base font-semibold" x-text="editingUser ? 'ইউজার সম্পাদনা' : 'নতুন ইউজার তৈরি'"></h3>
@@ -5163,8 +4955,8 @@
 
       <form @submit.prevent="saveUser()" class="space-y-3 text-xs">
         <div>
-          <label class="block text-apple-secondary mb-1">ইউজারনেম (*):</label>
-          <input type="text" x-model="userForm.username" required class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 font-bold">
+          <label class="block text-apple-secondary mb-1">ইমেইল (*):</label>
+          <input type="email" x-model="userForm.email" required class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800 font-bold">
         </div>
         <div>
           <label class="block text-apple-secondary mb-1">নাম / পদবি:</label>
@@ -5175,6 +4967,7 @@
           <div>
             <label class="block text-apple-secondary mb-1">রোল:</label>
             <select x-model="userForm.role" class="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800">
+              <option value="viewer">ভিউয়ার (শুধু দেখতে পারবে)</option>
               <option value="manager">ম্যানেজার (সীমিত)</option>
               <option value="admin">এডমিন (সব অনুমতি)</option>
             </select>
@@ -5197,6 +4990,10 @@
           </div>
         </div>
 
+        <div x-show="userForm.role === 'viewer'" class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+          <p class="text-[11px] text-apple-blue">ভিউয়ার শুধুমাত্র ড্যাশবোর্ড, রিপোর্ট ও প্রিন্ট দেখতে পারবে — কোনো ডেটা এন্ট্রি, এডিট বা ডিলিট করতে পারবে না।</p>
+        </div>
+
         <div class="pt-4 flex justify-end space-x-2">
           <button type="button" @click="showUserModal = false" class="px-4 py-2 bg-gray-100 dark:bg-zinc-800 text-xs rounded-xl font-medium">বাতিল</button>
           <button type="submit" class="px-5 py-2 bg-apple-blue text-white text-xs rounded-xl font-medium hover:bg-blue-600 shadow-sm">সংরক্ষণ করুন</button>
@@ -5206,7 +5003,7 @@
   </div>
 
   <!-- Modal 5: Store Add/Edit Modal (Admin Only) -->
-  <div x-show="showStoreModal" x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center frosted-glass bg-black/40 backdrop-blur-sm p-4 no-print">
+  <div x-show="showStoreModal" x-cloak x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center frosted-glass bg-black/40 backdrop-blur-sm p-4 no-print">
     <div @click.away="showStoreModal = false" class="bg-white dark:bg-apple-darkCard rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md p-6 space-y-4">
       <div class="flex justify-between items-center border-b pb-3 dark:border-gray-800">
         <h3 class="text-base font-semibold" x-text="editingStore ? 'গুদাম সম্পাদনা' : 'নতুন গুদাম তৈরি'"></h3>
@@ -5238,255 +5035,30 @@
 
   <!-- MAIN JAVASCRIPT APPLICATION LOGIC -->
   <script>
-
-    // ===== ADATA CLOUD INTEGRATION (§6.4) =====
-    // Cloud-only storage: ALL data lives on the Adata Cloud server.
-    // The browser keeps NOTHING in localStorage — every boot pulls from the
-    // server, and every change is pushed straight back to the server.
-    const ADATA_CONFIG = {
-      appId: 'mrtradingcoldstorage',
-      apiKey: 'adcloud_51bcb1e0ea0fedb3ed8b0c0a74384a3fc938ed1cd9d081a8',
-      serverUrl: 'http://192.168.0.237:3000'
-    };
-
-    const ADATA_COLLECTIONS = ['settings', 'clients', 'ledger_entries', 'payments', 'rates', 'monthly_bill_snapshots', 'expenses', 'users', 'stores', 'challan_records'];
-
-    // Available Adata Cloud server presets — pick one in Settings, or type a
-    // custom URL below. Boot always uses the first (default) server.
-    const SERVER_PRESETS = [
-      { label: 'সার্ভার ১ — 10.69.177.251 (ডিফল্ট)', url: 'http://http://192.168.0.104:3000' },
-      { label: 'সার্ভার ২ — 10.63.1.141', url: 'http://10.63.1.141:3000' }
-    ];
-
-    // AdataDB: thin HTTP wrapper over the Adata Cloud data API.
-    // Every request carries X-App-ID + X-API-Key. POST never sends a client id;
-    // the server assigns the UUID. 15s timeout, 429 => 30s backoff (max 3 retries).
-    class AdataDB {
-      constructor(config) {
-        this.config = config || {};
-      }
-      base() {
-        return (this.config.serverUrl || '').replace(/\/+$/, '');
-      }
-      headers(extra) {
-        return Object.assign({
-          'Content-Type': 'application/json',
-          'X-App-ID': this.config.appId || '',
-          'X-API-Key': this.config.apiKey || ''
-        }, extra || {});
-      }
-      async request(path, options = {}, attempts = 0) {
-        const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const timer = ctrl ? setTimeout(() => ctrl.abort(), 15000) : null;
-        try {
-          const fetchOpts = Object.assign({}, options || {});
-          fetchOpts.headers = this.headers(fetchOpts.headers || {});
-          if (ctrl) fetchOpts.signal = ctrl.signal;
-          const res = await fetch(this.base() + path, fetchOpts);
-          if (res.status === 429) {
-            await new Promise(r => setTimeout(r, 30000));
-            if (attempts < 3) return this.request(path, options, attempts + 1);
-            throw new Error('সার্ভার রেট লিমিট (429)');
-          }
-          const text = await res.text();
-          let body = null;
-          try { body = text ? JSON.parse(text) : null; } catch (e) { body = null; }
-          if (!res.ok) {
-            throw new Error(body && body.error ? body.error : ('HTTP ' + res.status));
-          }
-          return body;
-        } finally {
-          if (timer) clearTimeout(timer);
-        }
-      }
-      async health() {
-        return this.request('/health');
-      }
-      async list(collection, page = 1, limit = 100) {
-        return this.request('/api/data/' + encodeURIComponent(collection) + '?page=' + page + '&limit=' + limit);
-      }
-      async create(collection, item) {
-        return this.request('/api/data/' + encodeURIComponent(collection), { method: 'POST', body: JSON.stringify(item || {}) });
-      }
-      async update(collection, id, patch) {
-        return this.request('/api/data/' + encodeURIComponent(collection) + '/' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify(patch || {}) });
-      }
-      async remove(collection, id) {
-        return this.request('/api/data/' + encodeURIComponent(collection) + '/' + encodeURIComponent(id), { method: 'DELETE' });
-      }
-    }
-
-    // Paginate one collection: GET {collection}?page=&limit=100 -> { items, total }.
-    // 3 attempts per page with linear backoff.
-    async function fetchAllCollection(db, collection) {
-      const items = [];
-      let page = 1;
-      const limit = 100;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          while (true) {
-            const res = await db.list(collection, page, limit);
-            const batch = (res && res.items) ? res.items : [];
-            for (let i = 0; i < batch.length; i++) items.push(batch[i]);
-            if (!res || !res.total || items.length >= res.total) break;
-            page++;
-          }
-          return items;
-        } catch (e) {
-          if (attempt === 2) throw e;
-          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-        }
-      }
-      return items;
-    }
-
-    // Fetch every collection, max 8 in flight at a time.
-    async function fetchAllCollections(db, collections, onProgress) {
-      const out = {};
-      for (let i = 0; i < collections.length; i += 8) {
-        const batch = collections.slice(i, i + 8);
-        const results = await Promise.all(batch.map(async (c) => [c, await fetchAllCollection(db, c)]));
-        results.forEach(r => { out[r[0]] = r[1]; });
-        if (onProgress) onProgress(Math.min(i + 8, collections.length), collections.length);
-      }
-      return out;
-    }
-
-    // SyncQueue: in-memory write queue (cloud-primary — nothing is persisted to
-    // the browser). Ops flush in order immediately and on every 15s timer; failed
-    // ops retry (max 5 attempts) then are dropped. Because the queue is kept only
-    // in memory, a page reload while offline loses only unsent edits — the source
-    // of truth is always the Adata Cloud server.
-    class SyncQueue {
-      constructor(appId, db) {
-        this.appId = appId;
-        this.db = db;
-        this.pending = [];
-        this.running = false;
-        this.onStatus = null;
-        this.onError = null;
-        this.onPrepare = null;
-        this.onOpSuccess = null;
-        this.onWrote = null;
-      }
-      get ops() {
-        return this.pending || [];
-      }
-      save(list) {
-        this.pending = list || [];
-      }
-      enqueue(op) {
-        const list = this.ops;
-        // Replace an identical pending op instead of stacking duplicates (e.g. a create
-        // re-enqueued by a later boot/merge while the first copy is still offline).
-        const idx = list.findIndex(o =>
-          o.op === op.op && o.collection === op.collection &&
-          o.localId === op.localId && o.id === op.id
-        );
-        const entry = Object.assign({ ts: Date.now(), attempt: 0 }, op);
-        if (idx >= 0) list[idx] = entry; else list.push(entry);
-        this.save(list);
-      }
-      async flush() {
-        if (this.running) return;
-        this.running = true;
-        try {
-          const list = this.ops;
-          if (!list.length) return;
-          if (this.onStatus) this.onStatus('syncing', 'সিঙ্ক হচ্ছে...');
-          const kept = [];
-          for (const op of list) {
-            try {
-              if (op.op === 'create') {
-                const data = this.onPrepare ? this.onPrepare(op) : op.data;
-                if (!data) { kept.push(op); continue; }
-                const res = await this.db.create(op.collection, data);
-                if (res && res.id) {
-                  if (this.onOpSuccess) this.onOpSuccess(op, res.id);
-                  if (this.onWrote) this.onWrote();
-                } else {
-                  kept.push(op);
-                }
-              } else if (op.op === 'update') {
-                const patch = this.onPrepare ? this.onPrepare(op) : op.patch;
-                if (!patch) { kept.push(op); continue; }
-                await this.db.update(op.collection, op.id, patch);
-                if (this.onWrote) this.onWrote();
-              } else if (op.op === 'delete') {
-                await this.db.remove(op.collection, op.id);
-                if (this.onWrote) this.onWrote();
-              }
-            } catch (e) {
-              op.attempt = (op.attempt || 0) + 1;
-              if (op.attempt < 5) kept.push(op);
-              else if (this.onError) this.onError(op, e);
-            }
-          }
-          this.save(kept);
-          if (this.onStatus) {
-            if (kept.length) this.onStatus('offline', kept.length + ' টি পরিবর্তন অপেক্ষমাণ');
-            else this.onStatus('synced', 'অনলাইন সিঙ্কড');
-          }
-        } finally {
-          this.running = false;
-        }
-      }
-    }
-
-    // setupRealtime: SSE subscription to /api/realtime/subscribe. Any data_change
-    // event triggers the refresh callback (which re-pulls collections). Falls back
-    // to periodic polling if the stream dies. Fast reconnect for multi-device sync.
-    function setupRealtime(config, onDataChange) {
-      if (typeof EventSource === 'undefined') return null;
-      const url = (config.serverUrl || '').replace(/\/+$/, '') +
-        '/api/realtime/subscribe?app_id=' + encodeURIComponent(config.appId || '') +
-        '&api_key=' + encodeURIComponent(config.apiKey || '');
-      let es = null;
-      let retryCount = 0;
-      const MAX_RETRY_WAIT = 30000;
-      const connect = () => {
-        try {
-          if (es) { try { es.close(); } catch(e) {} }
-          es = new EventSource(url);
-          retryCount = 0;
-        } catch (e) { return; }
-        es.addEventListener('data_change', () => { if (onDataChange) onDataChange(); });
-        es.addEventListener('connected', () => { retryCount = 0; });
-        es.onmessage = () => { if (onDataChange) onDataChange(); };
-        es.onerror = () => {
-          retryCount++;
-          const wait = Math.min(1000 * Math.pow(2, retryCount), MAX_RETRY_WAIT);
-          setTimeout(() => { try { es = new EventSource(url); } catch(e){} }, wait);
-        };
-      };
-      connect();
-      const timer = setInterval(() => {
-        if (!es || es.readyState === EventSource.CLOSED) connect();
-      }, 8000);
-      return {
-        close() {
-          if (timer) clearInterval(timer);
-          if (es) es.close();
-        }
-      };
-    }
-
     function app() {
       return {
         // App State
+        isLoading: false,
+        _loadInFlight: false,
+        firestoreWriteDenied: false,
+        writeErrorHint: '',
+        loadErrorHint: '',
+        _writeTestError: null,
+        _syncedHashes: {},
         activeTab: 'dashboard',
         isLocked: true,
         darkMode: false,
         sidebarCollapsed: false,
-        loginForm: { username: '', password: '' },
+        loginForm: { email: '', password: '' },
         loginError: false,
+        loginErrorMessage: '',
+        isLoggingIn: false,
         currentUserId: null,
-        adminDefaultPassword: false,
         users: [],
         globalSearch: '',
         clientFilter: 'all',
         syncStatus: 'synced', // synced, syncing, offline
-        syncStatusText: 'অনলাইন সিঙ্কড',
+        syncStatusText: 'লোকাল মোড',
         isSaving: false,
         savingText: '',
         loadingText: '',
@@ -5494,19 +5066,6 @@
         showToast: false,
         toastText: '',
         toastType: 'success',
-        cloudDb: null,
-        cloudQueue: null,
-        realtimeConn: null,
-        cloudConnected: false,
-        reconnecting: false,
-        lastOwnWrite: 0,
-        suppressSync: false,
-        cloudSession: null,
-        showCloudKey: false,
-        cloudConfigOpen: false,
-        serverPresets: SERVER_PRESETS,
-        _flushTimer: null,
-        _refreshTimer: null,
 
         // Modals state
         showClientModal: false,
@@ -5515,7 +5074,7 @@
         editingClient: null,
         showUserModal: false,
         editingUser: null,
-        userForm: { username: '', fullName: '', role: 'manager', password: '', permissions: [] },
+        userForm: { email: '', fullName: '', role: 'manager', password: '', permissions: [] },
 
         // Role-based access control: manager-level permission definitions
         permissionDefs: [
@@ -5533,7 +5092,6 @@
           { key: 'daily-cash', label: 'দৈনিক আয়-খরচ' },
           { key: 'reports', label: 'রিপোর্টস ও অ্যানালিটিক্স' },
           { key: 'rates', label: 'দর ব্যবস্থাপনা (তারিখ-রেঞ্জ, দেখানোর ও হিসাবের দর)' },
-          { key: 'cloud', label: 'Adata ক্লাউড সার্ভার কনফিগারেশন' },
           { key: 'settings', label: 'সেটিংস (ব্যবসার তথ্য/দর)' }
         ],
 
@@ -5619,9 +5177,6 @@
           defaultStoreId: null,
           nextChallanNo: 1123,
           useChallanNo: false,
-          cloudServerUrl: ADATA_CONFIG.serverUrl,
-          cloudAppId: ADATA_CONFIG.appId,
-          cloudApiKey: ADATA_CONFIG.apiKey,
 
           // Print format customizations per document type
           printConfig: {
@@ -5817,28 +5372,41 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           { id: 'reports', label: 'রিপোর্টস ও অ্যানালিটিক্স', icon: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>` },
           { id: 'rates', label: 'দর ব্যবস্থাপনা', icon: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 21h18M4 18h16M6 18v-8m4 8V8m4 10v-4m4 4V6m-3-3l3 3-3 3M7 8l-3 3 3 3m4-5l3 3-3 3"/></svg>` },
           { id: 'stores', label: 'গুদাম ব্যবস্থাপনা', icon: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 11l3-9h12l3 9M3 11a3 3 0 106 0M9 11a3 3 0 106 0m0 0a3 3 0 106 0M3 11h18v3a4 4 0 01-4 4h-3v4h-4v-4H7a4 4 0 01-4-4v-3z"/></svg>` },
-          { id: 'cloud', label: 'Adata ক্লাউড কনফিগারেশন', icon: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 1.096A4.001 4.001 0 003 15z"/></svg>` },
           { id: 'settings', label: 'সেটিংস', icon: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>` }
         ],
 
         // App Initialization
         initApp() {
-          // Cloud-primary: no localStorage is ever read or written. Boot state is
-          // freshly pulled from the Adata Cloud server by startCloud() below.
-          this.cloudSession = { appId: ADATA_CONFIG.appId, serverUrl: ADATA_CONFIG.serverUrl };
-          // লগইন ফাস্ট — ক্যাশ থেকে users আগে লোড, ক্লাউড পুল ব্যাকগ্রাউন্ডে
-          try { const _cu = localStorage.getItem('mrt_users_cache'); if (_cu) { const _pu = JSON.parse(_cu); if (Array.isArray(_pu) && _pu.length) this.users = _pu; } } catch(e) {}
-
           this.initTheme();
           this.initSidebar();
 
-          if (this.clients.length === 0) {
-            this.selectedClientId = null;
-          } else {
-            this.selectedClientId = this.clients[0].id;
-          }
-          this.syncClientSearchText();
-          this.syncBillClientSearchText();
+          // রেস-কন্ডিশন এড়ানোর জন্য: ফায়ারবেস মডিউল ইতিমধ্যে লোড হয়ে গেলে সরাসরি auth-হ্যান্ডলার
+          // বসাও; না হলে 'firebase-ready' ইভেন্টের অপেক্ষায় থাকো। (মডিউল deferred হয় বলে
+          // কখনো কখনো ইভেন্টটি initApp()-এর আগেই পাঠানো হয়ে যায় — তখন listener মিস হয়।)
+          const setupAuth = () => {
+            if (!window.firebaseApp) return;
+            window.firebaseApp.onAuthStateChanged(window.firebaseApp.auth, async (user) => {
+              if (user) {
+                this.currentUserId = user.uid;
+                this.isLocked = false;
+                this.isLoading = true;
+                try {
+                  await this.loadDataFromFirestore();
+                  await this.ensureUserProfile(user);
+                  await this.verifyFirestoreWrite();
+                } finally {
+                  this.isLoading = false;
+                }
+              } else {
+                this.currentUserId = null;
+                this.isLocked = true;
+                this.clients = [];
+              }
+            });
+          };
+          if (window.__firebaseReady || window.firebaseApp) setupAuth();
+          else window.addEventListener('firebase-ready', setupAuth, { once: true });
+
           this.initBillLayout();
           this.initMasterLayout();
           this.initMasterSummaryLayout();
@@ -5846,26 +5414,8 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           this.initBulkRows();
           this.initPaymentRows();
 
-          // Re-center client ID when its left line is erased (merged zone); also on resize/layout changes
           window.addEventListener('resize', () => { this._mergeTick = ((this._mergeTick||0)+1) % 1000000; });
           setTimeout(() => { this._mergeTick = ((this._mergeTick||0)+1) % 1000000; }, 700);
-
-          // Real cloud sync: boot connects to Adata Cloud and pulls data.
-          this.syncStatus = 'syncing';
-          this.syncStatusText = 'ক্লাউডে কানেক্ট হচ্ছে...';
-          this.startCloud();
-
-          // Auto sync queue timer: flush pending writes every 2s — ৩-৪ ডিভাইসে দ্রুত সিঙ্ক
-          setInterval(() => {
-            this.processSyncQueue();
-          }, 2000);
-
-          // Best-effort flush of in-memory pending writes when the tab closes.
-          // (Cloud remains the only durable store — this just reduces data loss
-          // for edits made while offline.)
-          window.addEventListener('beforeunload', () => {
-            if (this.cloudQueue) this.cloudQueue.flush();
-          });
         },
 
         // ===== AUTHENTICATION & ROLE-BASED ACCESS CONTROL =====
@@ -5880,13 +5430,16 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
 
         roleLabel() {
           if (!this.currentUser) return '';
-          return this.currentUser.role === 'admin' ? 'এডমিন' : 'ম্যানেজার';
+          if (this.currentUser.role === 'admin') return 'এডমিন';
+          if (this.currentUser.role === 'viewer') return 'ভিউয়ার';
+          return 'ম্যানেজার';
         },
 
         // Admin has every permission; a manager only what the admin granted.
         can(perm) {
           if (!this.currentUser) return false;
           if (this.currentUser.role === 'admin') return true;
+          if (this.currentUser.role === 'viewer') return ['dashboard', 'client-report', 'master-summary', 'warehouse-stock', 'bills'].includes(perm);
           if (perm === 'payment-history' || perm === 'transfer-history' || perm === 'saved-payments') return (this.currentUser.permissions || []).includes('payments');
           return (this.currentUser.permissions || []).includes(perm);
         },
@@ -5927,27 +5480,256 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           return (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0');
         },
 
-        loginUser() {
-          const username = (this.loginForm.username || '').trim().toLowerCase();
-          const password = this.loginForm.password || '';
-          const user = this.users.find(u => (u.username || '').toLowerCase() === username);
-          if (!user) { this.loginError = true; return; }
-          const hash = this.hashPassword(password, user.salt);
-          if (hash !== user.passwordHash) { this.loginError = true; return; }
-          this.currentUserId = user.id;
-          this.isLocked = false;
+        async loginUser() {
+          this.isLoggingIn = true;
           this.loginError = false;
-          this.loginForm = { username: '', password: '' };
-          const first = this.visibleNavItems()[0];
-          this.activeTab = first ? first.id : 'dashboard';
+          const email = (this.loginForm.email || '').trim();
+          const password = this.loginForm.password || '';
+
+          try {
+            const credentials = await window.firebaseApp.signInWithEmailAndPassword(window.firebaseApp.auth, email, password);
+            // onAuthStateChanged হ্যান্ডলার ডেটা লোড করবে; সেটি নিশ্চিত হতে এখানে সরাসরি
+            // ঐ একই রুট চলানো হয় (সময়-অন্তর রেস এড়াতে)।
+            this.isLoggingIn = false;
+            const user = credentials.user;
+            this.currentUserId = user.uid;
+            this.isLocked = false;
+            this.isLoading = true;
+            try {
+              await this.loadDataFromFirestore();
+              await this.ensureUserProfile(user);
+              await this.verifyFirestoreWrite();
+            } finally {
+              this.isLoading = false;
+            }
+          } catch (e) {
+            this.loginError = true;
+            this.loginErrorMessage = 'ইমেইল বা পাসওয়ার্ড ভুল!';
+            this.isLoggingIn = false;
+          }
         },
 
         logoutUser() {
           this.currentUserId = null;
           this.isLocked = true;
-          this.loginForm = { username: '', password: '' };
+          this.loginForm = { email: '', password: '' };
           this.loginError = false;
+          window.firebaseApp.signOut(window.firebaseApp.auth);
         },
+
+        async createUserWithFirebase() {
+          if (!this.isAdmin()) return null;
+          try {
+            const userCredential = await window.firebaseApp.createUserWithEmailAndPassword(window.firebaseApp.auth, this.userForm.email, this.userForm.password);
+            return userCredential.user.uid;
+          } catch (e) {
+            console.error("Firebase auth create error:", e);
+            return null;
+          }
+        },
+
+
+        // ===== CENTRAL PERSISTENCE LAYER =====
+        _hashOf(rec) {
+          try { return JSON.stringify(rec); } catch (e) { return ''; }
+        },
+        // Firestore error-code → কারিগরি না দেখিয়ে ব্যবহারযোগ্য বাংলা নির্দেশ
+        _hintForError(code) {
+          const c = code ? String(code) : 'unknown';
+          if (c === 'not-found' || c === 'failed-precondition') {
+            return { hint: 'Firestore ডাটাবেস তৈরি হয়নি! Firebase Console → Firestore Database → "Create database" (Native mode) → Rules Publish করুন।', msg: 'Firestore ডাটাবেস সঠিক নেই! Console-এ পরীক্ষা করুন।', cat: 'db' };
+          }
+          if (c === 'permission-denied' || c === 'unauthenticated') {
+            return { hint: 'অনুমতি নেই! Firebase Console → Firestore Database → Rules-এ allow read, write: if request.auth != null; Publish করুন।', msg: 'সংরক্ষণ অনুমোদিত হয়নি! Firestore Rules Publish করুন।', cat: 'rules' };
+          }
+          if (c === 'resource-exhausted' || c === 'unavailable' || c === 'deadline-exceeded' || c === 'firebase-timeout') {
+            return { hint: 'Firebase-এ অস্থায়ী সীমা (কোটা/ব্যবস্থ) — Rules নয়। কয়েক মিনিট পর আবার চেষ্টা করুন, অথবা Console-এ Blaze প্ল্যান চালু করুন।', msg: 'Firebase-এ অস্থায়ী কোটা সীমা! কিছুক্ষণ পর আবার চেষ্টা করুন।', cat: 'quota' };
+          }
+          return { hint: 'ইন্টারনেট সংযোগ পরীক্ষা করুন।', msg: 'সংরক্ষণ ব্যর্থ হয়েছে! ইন্টারনেট সংযোগ পরীক্ষা করুন।', cat: 'net' };
+        },
+        // Firestore কল যেন বেশি সময় জুড়ে না বসে থাকে — কোটা/নেটওয়ার্ক ব্যস্ত হলেও
+        // লোডিং কখনো অনন্তকাল ঝুলবে না; নির্দিষ্ট সময় পর ব্যর্থ হয়ে বাংলা বার্তা দেয়।
+        _withTimeout(promise, ms) {
+          return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => reject(Object.assign(new Error('firebase-timeout'), {code: 'firebase-timeout'})), ms);
+            Promise.resolve(promise).then(
+              v => { clearTimeout(timer); resolve(v); },
+              e => { clearTimeout(timer); reject(e); }
+            );
+          });
+        },
+        _noteSynced(collection, rec) {
+          if (!rec || rec.id == null) return;
+          this._syncedHashes = this._syncedHashes || {};
+          this._syncedHashes[collection] = this._syncedHashes[collection] || {};
+          this._syncedHashes[collection][rec.id] = this._hashOf(rec);
+        },
+        _isSynced(collection, rec) {
+          if (!rec || rec.id == null) return false;
+          return !!(this._syncedHashes && this._syncedHashes[collection] && this._syncedHashes[collection][rec.id] === this._hashOf(rec));
+        },
+        _initSyncedHashes() {
+          this._syncedHashes = {};
+          const cols = {
+            clients: this.clients, ledger_entries: this.ledgerEntries, payments: this.payments,
+            rates: this.rates, monthly_bill_snapshots: this.snapshots, expenses: this.expenses,
+            users: this.users, stores: this.stores, challan_records: this.challanRecords
+          };
+          Object.keys(cols).forEach(col => (cols[col] || []).forEach(rec => this._noteSynced(col, rec)));
+          this._noteSynced('settings', this.settings);
+        },
+
+        async saveToFirestore(collection, rec) {
+          if (!window.firebaseApp || !rec) return;
+          const docId = rec.id || rec._id || (collection === 'settings' ? 'app_settings' : null);
+          if (!docId) { console.error("Firestore save [", collection, "] skipped — record has no id"); return; }
+          try {
+            const docRef = window.firebaseApp.doc(window.firebaseApp.collection(window.firebaseApp.db, collection), docId);
+            // JSON রাউন্ড-ট্রিপে undefined ফিল্ড বাদ যায় (Firestore undefined মান নেয় না)।
+            const clean = JSON.parse(JSON.stringify(rec));
+            await this._withTimeout(window.firebaseApp.setDoc(docRef, clean, { merge: true }), 15000);
+            this._noteSynced(collection, rec);
+          } catch (e) {
+            console.error("Firestore save [", collection, "] error:", e);
+            const mapped = this._hintForError(e && e.code);
+            this.firestoreWriteDenied = true;
+            this.writeErrorHint = mapped.hint;
+            this.showToastMsg(mapped.msg, 'error', 8000);
+          }
+        },
+
+        async saveRecord(collection, rec) {
+          this.isLoading = true;
+          await this.saveToFirestore(collection, rec);
+          this.isLoading = false;
+          this.showToastMsg('সেভ হয়েছে!', 'success');
+        },
+
+async deleteFromFirestore(collection, id) {
+          if (!window.firebaseApp) return;
+          try {
+            await this._withTimeout(window.firebaseApp.deleteDoc(window.firebaseApp.doc(window.firebaseApp.collection(window.firebaseApp.db, collection), id)), 15000);
+          } catch (e) {
+            console.error("Firestore delete error:", e);
+            const mapped = this._hintForError(e && e.code);
+            this.firestoreWriteDenied = true;
+            this.writeErrorHint = mapped.hint;
+            this.showToastMsg('ডিলিট ব্যর্থ হয়েছে! ' + mapped.hint, 'error', 8000);
+          }
+        },
+
+        // Firestore-এ লিখন চলছে কিনা স্ব-পরীক্ষা — Rules ঠিক আছে কিনা এমনিই ধরা পড়বে
+        // (ব্যবহারকারীকে কোনো কারিগরি বার্তা না দেখিয়ে)।
+        async testFirestoreWrite() {
+          if (!window.firebaseApp) return false;
+          this._writeTestError = null;
+          try {
+            const testRef = window.firebaseApp.doc(window.firebaseApp.collection(window.firebaseApp.db, '_sys'), 'wr_test');
+            await this._withTimeout(window.firebaseApp.setDoc(testRef, { ok: true, at: Date.now() }, { merge: true }), 10000);
+            await this._withTimeout(window.firebaseApp.deleteDoc(testRef), 10000);
+            return true;
+          } catch (e) {
+            console.error("Firestore WRITE test failed:", e);
+            this._writeTestError = (e && e.code) ? String(e.code) : 'unknown';
+            return false;
+          }
+        },
+
+        async verifyFirestoreWrite() {
+          const ok = await this.testFirestoreWrite();
+          this.firestoreWriteDenied = !ok;
+          if (!ok) {
+            const mapped = this._hintForError(this._writeTestError);
+            this.writeErrorHint = mapped.hint;
+            this.showToastMsg(mapped.msg, 'error', 8000);
+          } else {
+            this.writeErrorHint = '';
+          }
+          return ok;
+        },
+
+async loadDataFromFirestore() {
+          if (!window.firebaseApp) return;
+          if (this._loadInFlight) return;
+          this._loadInFlight = true;
+          try {
+            const collections = ['clients', 'ledger_entries', 'payments', 'rates', 'monthly_bill_snapshots', 'expenses', 'users', 'stores', 'challan_records', 'settings'];
+            const promises = collections.map(col => window.firebaseApp.getDocs(window.firebaseApp.collection(window.firebaseApp.db, col)));
+            // কোটা/নেটওয়ার্ক ব্যস্ত হলে ২০ সেকেন্ডের মধ্যে লোড ব্যর্থ হয়ে বাংলা বার্তা দেখাবে —
+            // লোডিং স্ক্রিন আর আটকে থাকবে না।
+            const snapshots = await this._withTimeout(Promise.all(promises), 20000);
+            
+            collections.forEach((col, index) => {
+              const data = snapshots[index].docs.map(doc => ({ ...doc.data(), id: doc.id }));
+              // Map Firestore collection names to Alpine state properties
+              const fieldMap = {
+                ledger_entries: 'ledgerEntries',
+                monthly_bill_snapshots: 'snapshots',
+                challan_records: 'challanRecords'
+              };
+              const field = fieldMap[col] || col;
+              this[field] = col === 'settings' ? (data[0] || this.settings) : data;
+            });
+
+            // এখন পর্যন্ত যা Firestore-এ আছে তা "সিঙ্কড" চিহ্নিত করি — যেন এই লগইনে
+            // কিছুই অযথা আবার লেখা না হয়। recalculateAllClients() তারপর শুধু সেসব রেকর্ড
+            // আপডেট করবে যার হিসাব আগের থেকে আলাদা।
+            this._initSyncedHashes();
+            this.recalculateAllClients();
+            this.initBulkRows();
+            this.initPaymentRows();
+            if (this.clients.length > 0 && !this.selectedClientId) {
+              this.selectedClientId = this.clients[0].id;
+            }
+          } catch (e) {
+            console.error("Firestore load error:", e);
+            const mapped = this._hintForError(e && e.code);
+            this.loadErrorHint = mapped.hint;
+            this.showToastMsg(mapped.msg, 'error', 10000);
+          } finally {
+            this._loadInFlight = false;
+          }
+        },
+
+        // Ensure the logged-in Firebase user has a matching user record in
+        // Firestore. First ever login (or a user created directly in the
+        // Firebase console) has no document yet — auto-provision one so the
+        // role-based menu works. The very first admin gets the 'admin' role;
+        // additional unknown users get 'viewer' as a safe default.
+        async ensureUserProfile(fbUser) {
+          if (!fbUser || !fbUser.uid) return;
+          const email = (fbUser.email || '').toLowerCase();
+          const existing = this.users.find(u =>
+            u.id === fbUser.uid ||
+            (email && String(u.username || u.email || '').toLowerCase() === email)
+          );
+          if (existing) {
+            if (existing.id !== fbUser.uid) {
+              existing.id = fbUser.uid;
+              if (!existing.email) existing.email = fbUser.email;
+              existing.updatedAt = Date.now();
+              await this.saveToFirestore('users', existing);
+            }
+            if (this.currentUserId !== fbUser.uid) this.currentUserId = fbUser.uid;
+            return;
+          }
+          const hasAdmin = this.users.some(u => u.role === 'admin');
+          const newUser = {
+            id: fbUser.uid,
+            username: email,
+            email: email,
+            fullName: fbUser.displayName || email,
+            role: hasAdmin ? 'viewer' : 'admin',
+            permissions: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: Date.now(),
+            status: 'active'
+          };
+          this.users.unshift(newUser);
+          this.currentUserId = fbUser.uid;
+          await this.saveToFirestore('users', newUser);
+        },
+
 
         // ===== DARK / LIGHT MODE TOGGLE =====
         applyTheme() {
@@ -5982,21 +5764,13 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           } catch (e) {}
         },
 
-        // Pick a preset cloud server from Settings — applies & reconnects at once.
-        setServerUrlFromPreset(e) {
-          const url = e && e.target ? e.target.value : '';
-          if (!url) return;
-          this.settings.cloudServerUrl = url;
-          this.saveCloudConfig();
-        },
-
         // ===== USER MANAGEMENT (admin only) =====
         openUserModal(user = null) {
           if (!this.isAdmin()) { alert('অনুমতি নেই! শুধুমাত্র এডমিন ইউজার তৈরি করতে পারেন।'); return; }
           if (user) {
             this.editingUser = user;
             this.userForm = {
-              username: user.username,
+              email: user.username || user.email || '',
               fullName: user.fullName || '',
               role: user.role || 'manager',
               password: '',
@@ -6005,7 +5779,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           } else {
             this.editingUser = null;
             this.userForm = {
-              username: '',
+              email: '',
               fullName: '',
               role: 'manager',
               password: '',
@@ -6023,110 +5797,76 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
 
         userPermissionSummary(user) {
           if (user.role === 'admin') return 'সব অনুমতি';
+          if (user.role === 'viewer') return 'শুধু দেখার সুবিধা';
           const labels = {};
           this.permissionDefs.forEach(p => { labels[p.key] = p.label; });
           return (user.permissions || []).map(p => labels[p] || p).join(', ') || 'কোনো অনুমতি নেই';
         },
 
-        saveUser() {
+        async saveUser() {
           if (!this.isAdmin()) { alert('অনুমতি নেই!'); return; }
-          const username = (this.userForm.username || '').trim();
-          if (!username) { alert('ইউজারনেম দিন'); return; }
-          const exists = this.users.find(u => u.username.toLowerCase() === username.toLowerCase() && (!this.editingUser || u.id !== this.editingUser.id));
-          if (exists) { alert('এই ইউজারনেম ইতিমধ্যে ব্যবহৃত হচ্ছে'); return; }
+          const email = (this.userForm.email || '').trim().toLowerCase();
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('সঠিক ইমেইল দিন'); return; }
+          const exists = this.users.find(u => (u.username || u.email || '').toLowerCase() === email && (!this.editingUser || u.id !== this.editingUser.id));
+          if (exists) { alert('এই ইমেইল ইতিমধ্যে ব্যবহৃত হচ্ছে'); return; }
           if (!this.editingUser && !this.userForm.password) { alert('নতুন ইউজারের জন্য পাসওয়ার্ড দিন'); return; }
           if (this.userForm.role === 'manager' && this.userForm.permissions.length === 0) { alert('ম্যানেজারের জন্য অন্তত একটি অনুমতি নির্বাচন করুন'); return; }
 
-          if (this.editingUser) {
-            const u = this.editingUser;
-            u.username = username;
-            u.fullName = this.userForm.fullName;
-            u.role = this.userForm.role;
-            u.permissions = this.userForm.role === 'admin' ? [] : this.userForm.permissions.slice();
-            if (this.userForm.password) {
-              u.salt = Math.floor(Math.random() * 0x7fffffff);
-              u.passwordHash = this.hashPassword(this.userForm.password, u.salt);
+          this.isLoading = true;
+          try {
+            if (this.editingUser) {
+              const u = this.editingUser;
+              u.username = email;
+              u.email = email;
+              u.fullName = this.userForm.fullName;
+              u.role = this.userForm.role;
+              u.permissions = this.userForm.role === 'admin' ? [] : this.userForm.permissions.slice();
+              u.updatedAt = Date.now();
+              if (this.userForm.password) {
+                u.pendingPassword = this.userForm.password;
+              }
+              await this.saveToFirestore('users', u);
+            } else {
+              const uid = await this.createUserWithFirebase();
+              if (!uid) { this.showToastMsg('ইউজার তৈরি ব্যর্থ হয়েছে!', 'error'); return; }
+              const newUser = {
+                id: uid,
+                username: email,
+                email,
+                fullName: this.userForm.fullName,
+                role: this.userForm.role,
+                permissions: this.userForm.role === 'admin' ? [] : this.userForm.permissions.slice(),
+                createdAt: new Date().toISOString(),
+                updatedAt: Date.now(),
+                status: 'active'
+              };
+              await this.saveToFirestore('users', newUser);
+              this.users.push(newUser);
             }
-            u.updatedAt = Date.now();
-            this.enqueueRecordSync('users', u);
-          } else {
-            const salt = Math.floor(Math.random() * 0x7fffffff);
-            const newUser = {
-              id: 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-              username,
-              fullName: this.userForm.fullName,
-              role: this.userForm.role,
-              permissions: this.userForm.role === 'admin' ? [] : this.userForm.permissions.slice(),
-              salt,
-              passwordHash: this.hashPassword(this.userForm.password, salt),
-              createdAt: new Date().toISOString(),
-              updatedAt: Date.now(),
-              status: 'active'
-            };
-            this.users.push(newUser);
-            this.enqueueRecordSync('users', newUser);
+            this.showUserModal = false;
+            this.showToastMsg('ইউজার সফলভাবে সেভ হয়েছে!', 'success');
+          } catch (e) {
+            this.showToastMsg('ইউজার সেভ ব্যর্থ হয়েছে!', 'error');
+          } finally {
+            this.isLoading = false;
           }
-          this.saveLocalData();
-          this.showUserModal = false;
-          alert('ইউজার সফলভাবে সেভ হয়েছে!');
         },
 
-        deleteUser(user) {
+        async deleteUser(user) {
           if (!this.isAdmin()) { alert('অনুমতি নেই!'); return; }
           if (user.id === this.currentUserId) { alert('নিজের অ্যাকাউন্ট ডিলিট করা যাবে না'); return; }
           const otherAdmins = this.users.filter(u => u.role === 'admin' && u.id !== user.id);
           if (user.role === 'admin' && otherAdmins.length === 0) { alert('শেষ অ্যাডমিনকে ডিলিট করা যাবে না'); return; }
           if (confirm('ইউজার "' + user.username + '" কে মুছে ফেলবেন?')) {
-            if (user._cloudId && this.cloudQueue) {
-              this.cloudQueue.enqueue({ op: 'delete', collection: 'users', id: user._cloudId });
-            }
+            this.isLoading = true;
+            await this.deleteFromFirestore('users', user.id);
             this.users = this.users.filter(u => u.id !== user.id);
-            this.saveLocalData();
+            this.isLoading = false;
+            this.showToastMsg('ইউজার মুছে ফেলা হয়েছে!', 'success');
           }
         },
 
-        // Seed the default admin account on very first boot (no users yet).
-        ensureAdminUser() {
-          if (this.users.length > 0 || !this.cloudDb) return;
-          const salt = Math.floor(Math.random() * 0x7fffffff);
-          const admin = {
-            id: 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-            username: 'admin',
-            fullName: 'এডমিন',
-            role: 'admin',
-            permissions: [],
-            salt,
-            passwordHash: this.hashPassword('admin1234@#', salt),
-            createdAt: new Date().toISOString(),
-            updatedAt: Date.now(),
-            status: 'active'
-          };
-          this.users.push(admin);
-          this.enqueueRecordSync('users', admin);
-          this.saveLocalData();
-          this.adminDefaultPassword = true;
-        },
-
         // ===== STORE MANAGEMENT (admin only) =====
-        // Seed a default "প্রধান গুদাম" on first boot (no stores yet).
-        ensureDefaultStores() {
-          if (this.stores.length > 0 || !this.cloudDb) return;
-          const main = {
-            id: 'store_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-            code: 'MAIN',
-            name: 'প্রধান গুদাম',
-            location: '',
-            createdAt: new Date().toISOString(),
-            updatedAt: Date.now(),
-            status: 'active'
-          };
-          this.stores.push(main);
-          this.settings.defaultStoreId = main.id;
-          this.enqueueRecordSync('stores', main);
-          this.enqueueRecordSync('settings', this.settings);
-          this.saveLocalData();
-        },
-
         getDefaultStoreId() {
           if (this.settings.defaultStoreId && this.stores.some(s => s.id === this.settings.defaultStoreId)) {
             return this.settings.defaultStoreId;
@@ -6179,7 +5919,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
             s.name = name;
             s.location = (this.storeForm.location || '').trim();
             s.updatedAt = Date.now();
-            this.enqueueRecordSync('stores', s);
+            this.saveToFirestore('stores', s);
           } else {
             const newStore = {
               id: 'store_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
@@ -6192,7 +5932,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
             };
             this.stores.push(newStore);
             if (!this.settings.defaultStoreId) this.settings.defaultStoreId = newStore.id;
-            this.enqueueRecordSync('stores', newStore);
+            this.saveToFirestore('stores', newStore);
           }
           this.saveLocalData();
           this.showStoreModal = false;
@@ -6211,9 +5951,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           const hasRef = this.ledgerEntries.some(e => e.stockIn?.storeId === store.id || e.delivery?.storeId === store.id);
           if (hasStock) { alert('এই স্টোরে বর্তমানে মাল মজুদ আছে — আগে মাল সরান, তারপর ডিলিট করুন'); return; }
           if (confirm('স্টোর "' + store.name + '" মুছে ফেলবেন?' + (hasRef ? '\n(পুরনো এন্ট্রিগুলো "প্রধান গুদাম" হিসেবে গণনা হবে)' : ''))) {
-            if (store._cloudId && this.cloudQueue) {
-              this.cloudQueue.enqueue({ op: 'delete', collection: 'stores', id: store._cloudId });
-            }
+            this.deleteFromFirestore('stores', store.id);
             this.stores = this.stores.filter(s => s.id !== store.id);
             this.recalculateAllClients();
             this.saveLocalData();
@@ -6699,13 +6437,12 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
 
           const monthStart = month + '-01';
           const monthEnd = month + '-' + this.pad2(this.lastDayOfMonth(month));
-          const today = this.todayStr();
-          // project=true (ক্লায়েন্ট লেজার রিপোর্ট): বর্তমান/ভবিষ্যৎ মাসকে মাস-শেষ পর্যন্ত প্রজেক্ট
-          // করে (এন্ট্রি-বিহীন দিনে শেষ-জানা স্টক × কার্যকর দরে ক্রমাগত চার্জ)। বিল জেনারেটর
-          // project ছাড়া কল করে — আগের নিয়ম (আজ পর্যন্ত) অপরিবর্তিত।
-          let spanEnd = monthEnd <= today ? monthEnd : today;
-          if (project) spanEnd = monthEnd;
-          if (spanEnd < monthStart) return null;
+          // সাবেক টাকা = আগের মাসের ক্লোজিং (PRD §৬)। বিল সবসময় পূর্ণ মাস জুড়ে তৈরি হয়
+          // (চলতি মাসও মাস-শেষ পর্যন্ত প্রজেক্টেড) — এ মাসের পূর্ণ বিল পরের মাসের সাবেক টাকায়
+          // সম্পূর্ণ এড হয়, শুধু টু-ডেট (এখন পর্যন্ত) চার্জ নয়। ভবিষ্যৎ/আংশিক মাসে এন্ট্রি-বিহীন
+          // দিনগুলো বর্তমান-জানা স্টক × কার্যকর দরে সিনথেসাইজড চার্জ পায়।
+          const spanEnd = monthEnd;
+          // (নোট: এন্ট্রি-দিন থেকে চার্জ শুরু হয় — মাসের শুরুতে স্টক না থাকলে সেদিন চার্জ ০)
 
           const start = this.stateAtMonthStart(clientId, month);
           const openingStock = { bags: start.bags, kg: start.kg };
@@ -7063,7 +6800,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
               challanNo: data.challanNo !== undefined ? data.challanNo : (existing.challanNo || ''),
               note: data.note || existing.note
             });
-            this.enqueueRecordSync('ledger_entries', existing);
+            this.saveToFirestore('ledger_entries', existing);
             return existing;
           }
           const entry = {
@@ -7080,7 +6817,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
             runningBalance: 0
           };
           this.ledgerEntries.push(entry);
-          this.enqueueRecordSync('ledger_entries', entry);
+          this.saveToFirestore('ledger_entries', entry);
           return entry;
         },
 
@@ -7191,7 +6928,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
                 runningBalance: 0
               };
               this.clients.push(newClient);
-              this.enqueueRecordSync('clients', newClient);
+              this.saveToFirestore('clients', newClient);
               addedIds.push(newClient.id);
             });
             this.clients = [...this.clients];
@@ -7228,7 +6965,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
                     activeRate.effectiveFrom < curMonthStart &&
                     (activeRate.effectiveTo == null || activeRate.effectiveTo >= curMonthStart)) {
                   activeRate.effectiveTo = prevMonthEnd;
-                  this.enqueueRecordSync('rates', activeRate);
+                  this.saveToFirestore('rates', activeRate);
                 }
                 // নতুন দর → চলতি মাস থেকে শুরু করে নতুন রেঞ্জ (পুরোনো মাস ঢেকে না)।
                 const newRate = {
@@ -7243,7 +6980,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
                 };
                 this.rates.push(newRate);
                 this.rates.sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
-                this.enqueueRecordSync('rates', newRate);
+                this.saveToFirestore('rates', newRate);
               }
               // client-এর বেস দর রাখি মূল (আগের) হিসেবে — যাতে পুরোনো দিন (যার কোনো রেঞ্জ
               // নেই) মূল দরেই পড়ে, নতুন দরে নয়। আজকের কার্যকর দর নতুন রেঞ্জ থেকেই আসে।
@@ -7280,7 +7017,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
             }
             this.showClientModal = false;
             this.initBulkRows();
-            this.enqueueRecordSync('clients', savedClient);
+            this.saveToFirestore('clients', savedClient);
           });
         },
 
@@ -7473,7 +7210,7 @@ selectClient(clientId) {
 
         // ভুল এন্ট্রি (তারিখ/স্টক-ইন/ডেলিভারি/জমা) ঠিক করার জন্য ইনলাইন এডিট।
         // পরিবর্তনের পর লেজার রিক্যালক হয় — বিল ও রিপোর্ট নতুন সংখ্যায় মিলে যায়।
-        saveLedgerEntry(entryId) {
+        saveLedgerEntryInline(entryId) {
           if (!this.requirePerm('client-ledger')) return;
           const entry = this.ledgerEntries.find(e => e.id === entryId);
           if (!entry) { this.editingLedgerDateId = null; return; }
@@ -7494,14 +7231,14 @@ selectClient(clientId) {
           // দৈনিক আয়-খরচেও অটো আপডেট হয়, যেন সেভ-হওয়া জমা/দৈনিক আয়-খরচ/লেজার সব মিলে থাকে।
           if (oldDate !== newDate && this.getFilteredSavedPayments) {
             const oldPay = this.payments.find(p => p.clientId === entry.clientId && p.date === oldDate && !this.isTransferMethod(p));
-            if (oldPay) { oldPay.date = newDate; oldPay.updatedAt = Date.now(); this.enqueueRecordSync('payments', oldPay); }
+            if (oldPay) { oldPay.date = newDate; oldPay.updatedAt = Date.now(); this.saveToFirestore('payments', oldPay); }
           }
           // পুরনো তারিখে চালান রেকর্ড ছিল → নতুন তারিখ/নম্বরে সিঙ্ক
           if (oldDate !== newDate) {
             const oldRec = this.challanRecords.find(r => r.clientId === entry.clientId && r.date === oldDate);
             if (oldRec) {
               this.challanRecords = this.challanRecords.filter(r => r.id !== oldRec.id);
-              if (oldRec._cloudId && this.cloudQueue) this.cloudQueue.enqueue({ op: 'delete', collection: 'challan_records', id: oldRec._cloudId });
+              this.deleteFromFirestore('challan_records', oldRec.id);
             }
           }
           this.syncChallanForLedger(entry.clientId, entry.date, entry.challanNo);
@@ -7511,10 +7248,10 @@ selectClient(clientId) {
           if (pay) {
             pay.amount = amount;
             pay.updatedAt = Date.now();
-            this.enqueueRecordSync('payments', pay);
+            this.saveToFirestore('payments', pay);
           }
           entry.updatedAt = Date.now();
-          this.enqueueRecordSync('ledger_entries', entry);
+          this.saveToFirestore('ledger_entries', entry);
           this.recalculateClientLedger(entry.clientId);
           this.editingLedgerDateId = null;
         },
@@ -7523,14 +7260,14 @@ selectClient(clientId) {
           if (confirm('আপনি কি এই এন্ট্রিটি মুছে ফেলতে চান?')) {
             const entry = this.ledgerEntries.find(e => e.id === entryId);
             this.ledgerEntries = this.ledgerEntries.filter(e => e.id !== entryId);
-            if (entry && entry._cloudId && this.cloudQueue) {
-              this.cloudQueue.enqueue({ op: 'delete', collection: 'ledger_entries', id: entry._cloudId });
+            if (entry) {
+              this.deleteFromFirestore('ledger_entries', entry.id);
             }
             if (entry) {
               const recs = this.challanRecords.filter(r => r.clientId === entry.clientId && r.date === entry.date);
               recs.forEach(r => {
                 this.challanRecords = this.challanRecords.filter(x => x.id !== r.id);
-                if (r._cloudId && this.cloudQueue) this.cloudQueue.enqueue({ op: 'delete', collection: 'challan_records', id: r._cloudId });
+                this.deleteFromFirestore('challan_records', r.id);
               });
             }
             this.recalculateClientLedger(this.selectedClientId);
@@ -7577,7 +7314,7 @@ selectClient(clientId) {
               payment.method = this.paymentForm.method;
               payment.note = this.paymentForm.note;
               payment.updatedAt = Date.now();
-              this.enqueueRecordSync('payments', payment);
+              this.saveToFirestore('payments', payment);
             } else {
               const np = {
                 id: 'pay_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
@@ -7588,7 +7325,7 @@ selectClient(clientId) {
                 note: this.paymentForm.note
               };
               this.payments.push(np);
-              this.enqueueRecordSync('payments', np);
+              this.saveToFirestore('payments', np);
             }
             const existing = this.ledgerEntries.find(e => e.clientId === clientId && e.date === date);
             const kai = payment ? (Number(payment.kaifiyat) || 0) : 0;
@@ -7666,7 +7403,7 @@ selectClient(clientId) {
           const oldLe = this.ledgerEntries.find(e => e.clientId === clientId && e.date === oldDate);
           if (oldLe) {
             oldLe.deposit = Math.max(0, Math.round(((oldLe.deposit || 0) - oldAmt) * 100) / 100);
-            this.enqueueRecordSync('ledger_entries', oldLe);
+            this.saveToFirestore('ledger_entries', oldLe);
           }
           // Handle date clash: same client+date already has another payment → remove it
           if (newDate !== oldDate) {
@@ -7676,7 +7413,7 @@ selectClient(clientId) {
               const clashLe = this.ledgerEntries.find(e => e.clientId === clientId && e.date === newDate);
               if (clashLe) {
                 clashLe.deposit = Math.max(0, Math.round(((clashLe.deposit || 0) - clashAmt) * 100) / 100);
-                this.enqueueRecordSync('ledger_entries', clashLe);
+                this.saveToFirestore('ledger_entries', clashLe);
               }
               this.payments = this.payments.filter(x => x.id !== clash.id);
             }
@@ -7688,13 +7425,13 @@ selectClient(clientId) {
           p.charge = newChg;
           p.note = f.note;
           p.updatedAt = Date.now();
-          this.enqueueRecordSync('payments', p);
+          this.saveToFirestore('payments', p);
           // Add deposit to new-date ledger entry
           const newTotal = Math.round((newAmt + newKai) * 100) / 100;
           const newLe = this.ledgerEntries.find(e => e.clientId === clientId && e.date === newDate);
           if (newLe) {
             newLe.deposit = Math.round(((newLe.deposit || 0) + newTotal) * 100) / 100;
-            this.enqueueRecordSync('ledger_entries', newLe);
+            this.saveToFirestore('ledger_entries', newLe);
           } else {
             this.upsertLedgerEntry(clientId, newDate, {
               stockIn: { bags: 0, kg: 0 },
@@ -7730,7 +7467,7 @@ selectClient(clientId) {
               }
             });
             removed.forEach(p => {
-              if (p._cloudId && this.cloudQueue) this.cloudQueue.enqueue({ op: 'delete', collection: 'payments', id: p._cloudId });
+              this.deleteFromFirestore('payments', p.id);
             });
             this.payments = this.payments.filter(p => removed.indexOf(p) === -1);
             this.recalculateClientLedger(payment.clientId);
@@ -7738,14 +7475,12 @@ selectClient(clientId) {
             if (payment.destClientId && payment.destClientId !== payment.clientId) this.recalculateClientLedger(payment.destClientId);
           } else {
             this.payments = this.payments.filter(p => p.id !== id);
-            if (payment._cloudId && this.cloudQueue) {
-              this.cloudQueue.enqueue({ op: 'delete', collection: 'payments', id: payment._cloudId });
-            }
+            this.deleteFromFirestore('payments', payment.id);
             const removedAmt = Math.round(((Number(payment.amount) || 0) + (Number(payment.kaifiyat) || 0)) * 100) / 100;
             const le = this.ledgerEntries.find(e => e.clientId === payment.clientId && e.date === payment.date);
             if (le) {
               if (removedAmt > 0) le.deposit = Math.max(0, Math.round(((le.deposit || 0) - removedAmt) * 100) / 100);
-              this.enqueueRecordSync('ledger_entries', le);
+              this.saveToFirestore('ledger_entries', le);
             }
             this.recalculateClientLedger(payment.clientId);
           }
@@ -7853,7 +7588,7 @@ selectClient(clientId) {
                 ex.amount = Number(this.expenseForm.amount);
                 ex.note = this.expenseForm.note || '';
                 ex.updatedAt = Date.now();
-                this.enqueueRecordSync('expenses', ex);
+                this.saveToFirestore('expenses', ex);
               }
             } else {
               const expense = {
@@ -7864,7 +7599,7 @@ selectClient(clientId) {
                 note: this.expenseForm.note || ''
               };
               this.expenses.push(expense);
-              this.enqueueRecordSync('expenses', expense);
+              this.saveToFirestore('expenses', expense);
             }
             this.showExpenseModal = false;
           });
@@ -7877,7 +7612,7 @@ selectClient(clientId) {
           if (!confirm('এই খরচটি মুছে ফেলবেন?')) return;
           ex._deleted = true;
           ex.updatedAt = Date.now();
-          this.enqueueRecordSync('expenses', ex);
+          this.saveToFirestore('expenses', ex);
         },
 
         cashPrintIncomeRows(){
@@ -8208,8 +7943,7 @@ selectClient(clientId) {
             const next = maxCh + 1;
             this.settings.nextChallanNo = next;
             this.bulkStartChallan = next;
-            this.enqueueRecordSync('settings', this.settings);
-            if (this.cloudQueue) this.cloudQueue.flush();
+            this.saveToFirestore('settings', this.settings);
           }
           alert(count + ' টি ক্লায়েন্টের এন্ট্রি সফলভাবে সংরক্ষণ করা হয়েছে!');
           this.initBulkRows(true);
@@ -8228,7 +7962,7 @@ selectClient(clientId) {
             existing.clientCode = code;
             existing.clientName = name;
             existing.updatedAt = Date.now();
-            this.enqueueRecordSync('challan_records', existing);
+            this.saveToFirestore('challan_records', existing);
             return existing;
           }
           const rec = {
@@ -8242,7 +7976,7 @@ selectClient(clientId) {
             updatedAt: Date.now()
           };
           this.challanRecords.push(rec);
-          this.enqueueRecordSync('challan_records', rec);
+          this.saveToFirestore('challan_records', rec);
           return rec;
         },
 
@@ -8257,7 +7991,7 @@ selectClient(clientId) {
             const recs = this.challanRecords.filter(r => r.clientId === clientId && r.date === date);
             recs.forEach(r => {
               this.challanRecords = this.challanRecords.filter(x => x.id !== r.id);
-              if (r._cloudId && this.cloudQueue) this.cloudQueue.enqueue({ op: 'delete', collection: 'challan_records', id: r._cloudId });
+              this.deleteFromFirestore('challan_records', r.id);
             });
           }
         },
@@ -8297,7 +8031,7 @@ selectClient(clientId) {
           reader.onload = () => {
             record.imageUrl = String(reader.result || '');
             record.updatedAt = Date.now();
-            this.enqueueRecordSync('challan_records', record);
+            this.saveToFirestore('challan_records', record);
           };
           reader.onerror = () => { alert('ছবি পড়া যায়নি'); };
           reader.readAsDataURL(file);
@@ -8307,7 +8041,7 @@ selectClient(clientId) {
         challanRemoveImage(record) {
           record.imageUrl = '';
           record.updatedAt = Date.now();
-          this.enqueueRecordSync('challan_records', record);
+          this.saveToFirestore('challan_records', record);
         },
 
         challanViewImage(record) {
@@ -8363,7 +8097,7 @@ selectClient(clientId) {
           // keep header in sync to next free number
           this.bulkStartChallan = cur;
           this.settings.nextChallanNo = cur;
-          this.enqueueRecordSync('settings', this.settings);
+          this.saveToFirestore('settings', this.settings);
         },
 
         // ===== টাকা জমা রেজিস্টার (Payment Bulk) =====
@@ -8647,11 +8381,11 @@ selectClient(clientId) {
                 payment.charge = chg;
                 payment.note = note;
                 payment.updatedAt = Date.now();
-                this.enqueueRecordSync('payments', payment);
+                this.saveToFirestore('payments', payment);
               } else {
                 const np = { id: 'pay_' + Date.now() + '_' + Math.random().toString(36).substr(2,6), clientId: row.clientId, date: entryDate, amount: amt, kaifiyat: kai, charge: chg, method: 'cash', note: note };
                 this.payments.push(np);
-                this.enqueueRecordSync('payments', np);
+                this.saveToFirestore('payments', np);
               }
               const existing = this.ledgerEntries.find(e => e.clientId === row.clientId && e.date === entryDate);
               if (existing) existing.deposit = total;
@@ -8899,8 +8633,8 @@ selectClient(clientId) {
           const destPay = { id: tId + '_d', clientId: destClient.id, date, amount: amt, kaifiyat: 0, method: 'transfer', note: destNote, sourceClientId: srcClient.id, destClientId: destClient.id, balanceDelta: amt };
           this.payments.push(srcPay);
           this.payments.push(destPay);
-          this.enqueueRecordSync('payments', srcPay);
-          this.enqueueRecordSync('payments', destPay);
+          this.saveToFirestore('payments', srcPay);
+          this.saveToFirestore('payments', destPay);
           this.recalculateClientLedger(srcClient.id);
           this.recalculateClientLedger(destClient.id);
           this.initPaymentRows(true);
@@ -9041,7 +8775,7 @@ selectClient(clientId) {
           this.rates.sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
           this.recalculateAllClients();
           this.saveLocalData();
-          this.enqueueRecordSync('rates', newRate);
+          this.saveToFirestore('rates', newRate);
           this.rateForm.rate = 0.13;
           this.rateForm.displayRate = null;
           this.rateForm.effectiveTo = null;
@@ -9079,7 +8813,7 @@ selectClient(clientId) {
           this.rates.sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
           this.recalculateClientLedger(client.id);
           this.saveLocalData();
-          this.enqueueRecordSync('rates', newRate);
+          this.saveToFirestore('rates', newRate);
           this.rateForm.rate = 0.13;
           this.rateForm.displayRate = null;
           this.rateForm.effectiveTo = null;
@@ -9091,9 +8825,7 @@ selectClient(clientId) {
           if (confirm('এই দরের রেকর্ডটি মুছে ফেলবেন?')) {
             const rate = this.rates.find(r => r.id === id);
             this.rates = this.rates.filter(r => r.id !== id);
-            if (rate && rate._cloudId && this.cloudQueue) {
-              this.cloudQueue.enqueue({ op: 'delete', collection: 'rates', id: rate._cloudId });
-            }
+            this.deleteFromFirestore('rates', rate.id);
             this.recalculateAllClients();
             this.saveLocalData();
           }
@@ -9322,6 +9054,20 @@ selectClient(clientId) {
           return arr.slice(-35).map(a=>({date:a.date, label: a.label, bags: Math.max(12, Math.round(a.bags||0))}));
         },
         get dashboardHistogramMax() { return Math.max(...this.dashboardHistogramBars.map(d=>d.bags), 100); },
+        get dashboardHistogramSvg() {
+          const bars = this.dashboardHistogramBars;
+          const n = bars.length || 1;
+          const max = this.dashboardHistogramMax;
+          let html = '';
+          bars.forEach((d, i) => {
+            const x = 30 + i * (380/n) + 1;
+            const w = Math.max(380/n - 1.5, 1.5);
+            const h = Math.max(pctOf(d.bags, max) * 1.0, 2);
+            const y = 125 - h;
+            html += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#6a9e8e" rx="1"></rect>`;
+          });
+          return html;
+        },
         get dashboardPieData() {
           // রিয়েল ডেটা — টপ ৩ ক্লায়েন্ট + অন্যান্য
           const sorted = [...this.clients].sort((a,b)=>(b.currentStock?.bags||0)-(a.currentStock?.bags||0));
@@ -9358,6 +9104,11 @@ selectClient(clientId) {
             start = end;
             return {...v, pct: pct.toFixed(1)+'%', path, lx, ly, lineW:18, color:v.color};
           });
+        },
+        get dashboardPieSvg() {
+          return (this.dashboardPieData || []).map(s =>
+            `<path d="${s.path}" fill="${s.color}" stroke="white" stroke-width="0.5"></path>`
+          ).join('');
         },
         get dashboardLineBagsLabels() { return this.dashboardHistogramBars.slice(-35); },
         get dashboardLineBagsPath() {
@@ -9886,8 +9637,7 @@ selectClient(clientId) {
           if (this.settings.billLayout) {
             this.settings.updatedAt = Date.now();
             try { localStorage.setItem('mrt_billLayout', JSON.stringify(this.settings.billLayout)); } catch(e) {}
-            this.enqueueRecordSync && this.enqueueRecordSync('settings', this.settings);
-            if (this.cloudQueue) this.cloudQueue.flush();
+            this.saveToFirestore('settings', this.settings);
           }
           if (this._billSaveTimer) clearTimeout(this._billSaveTimer);
           this._billSaveTimer = setTimeout(() => this.saveSettings && this.saveSettings(), 300);
@@ -9900,8 +9650,7 @@ selectClient(clientId) {
           if (this.settings.masterLayout) {
             this.settings.updatedAt = Date.now();
             try { localStorage.setItem('mrt_masterLayout', JSON.stringify(this.settings.masterLayout)); } catch(e) {}
-            this.enqueueRecordSync && this.enqueueRecordSync('settings', this.settings);
-            if (this.cloudQueue) this.cloudQueue.flush();
+            this.saveToFirestore('settings', this.settings);
           }
           if (this._masterSaveTimer) clearTimeout(this._masterSaveTimer);
           this._masterSaveTimer = setTimeout(() => this.saveSettings && this.saveSettings(), 300);
@@ -10045,8 +9794,7 @@ selectClient(clientId) {
           if (this.settings.masterSummaryLayout) {
             this.settings.updatedAt = Date.now();
             try { localStorage.setItem('mrt_masterSummaryLayout', JSON.stringify(this.settings.masterSummaryLayout)); } catch(e) {}
-            this.enqueueRecordSync && this.enqueueRecordSync('settings', this.settings);
-            if (this.cloudQueue) this.cloudQueue.flush();
+            this.saveToFirestore('settings', this.settings);
           }
           if (this._masterSummarySaveTimer) clearTimeout(this._masterSummarySaveTimer);
           this._masterSummarySaveTimer = setTimeout(() => this.saveSettings && this.saveSettings(), 300);
@@ -10736,49 +10484,23 @@ selectClient(clientId) {
           this.saveSettings();
         },
 
-        // Settings & Storage Persistence (cloud-only — no localStorage)
+        // Settings & Storage Persistence (Firestore)
         saveSettings() {
           if (!this.currentUser || this.isLocked) return;
           if (!this.requirePerm('settings')) return;
           if (this.isSaving) return;
           this.withSaving('সেটিংস সেভ হচ্ছে...', async () => {
-            const prev = this.getCloudSession();
-            const next = { appId: this.settings.cloudAppId, serverUrl: this.settings.cloudServerUrl };
-            const switched = prev && (prev.appId !== next.appId || prev.serverUrl !== next.serverUrl);
             this.recalculateAllClients();
-            if (switched) {
-              this.stripCloudMeta();
-              this.syncStatus = 'syncing';
-              this.syncStatusText = 'নতুন সার্ভারে কানেক্ট হচ্ছে...';
-              this.cloudSession = next;
-              await this.startCloud();
-            } else {
-              this.enqueueRecordSync('settings', this.settings);
-              if (this.cloudQueue) this.cloudQueue.flush();
-            }
+            this.saveToFirestore('settings', this.settings);
           });
         },
 
-        // Cloud configuration save (standalone tab, requires 'cloud' permission).
-        // Same reconnect-on-switch logic as saveSettings.
+        // Settings save (standalone tab) — Firestore only.
         saveCloudConfig() {
           if (!this.currentUser) return;
-          if (!this.requirePerm('cloud')) return;
           if (this.isSaving) return;
-          this.withSaving('ক্লাউড কনফিগ সেভ হচ্ছে...', async () => {
-            const prev = this.getCloudSession();
-            const next = { appId: this.settings.cloudAppId, serverUrl: this.settings.cloudServerUrl };
-            const switched = prev && (prev.appId !== next.appId || prev.serverUrl !== next.serverUrl);
-            if (switched) {
-              this.stripCloudMeta();
-              this.syncStatus = 'syncing';
-              this.syncStatusText = 'নতুন সার্ভারে কানেক্ট হচ্ছে...';
-              this.cloudSession = next;
-              await this.startCloud();
-            } else {
-              this.enqueueRecordSync('settings', this.settings);
-              if (this.cloudQueue) this.cloudQueue.flush();
-            }
+          this.withSaving('সেটিংস সেভ হচ্ছে...', async () => {
+            this.saveToFirestore('settings', this.settings);
           });
         },
 
@@ -10795,6 +10517,7 @@ selectClient(clientId) {
           if (this.isSaving) return;
           this.isSaving = true;
           this.savingText = text;
+          this.isLoading = true;
           this.showToastMsg(text, 'saving', 0);
           try {
             await fn();
@@ -10804,16 +10527,20 @@ selectClient(clientId) {
           } finally {
             this.isSaving = false;
             this.savingText = '';
+            this.isLoading = false;
           }
         },
 
-        // Cloud-primary persistence: every data change is pushed to the Adata
-        // Cloud server immediately. Nothing is written to localStorage. The
-        // in-memory queue (which retries offline ops) then flushes.
+        // Firestore persistence: every data change is pushed to Firestore.
         saveLocalData() {
-          if (!this.cloudQueue || this.suppressSync) return;
+          if (this.suppressSync) return;
           const enq = (collection, arr) => {
-            (arr || []).forEach(rec => { if (rec) this.enqueueRecordSync(collection, rec); });
+            (arr || []).forEach(rec => {
+              if (!rec) return;
+              // Quota সাশ্রয়: যে রেকর্ড Firestore-এ আগের মতোই আছে তা আবার লেখা হয় না।
+              if (this._isSynced(collection, rec)) return;
+              this.saveToFirestore(collection, rec);
+            });
           };
           enq('clients', this.clients);
           enq('ledger_entries', this.ledgerEntries);
@@ -10824,8 +10551,7 @@ selectClient(clientId) {
           enq('users', this.users);
             enq('stores', this.stores);
             enq('challan_records', this.challanRecords);
-          this.enqueueRecordSync('settings', this.settings);
-          this.cloudQueue.flush();
+          if (!this._isSynced('settings', this.settings)) this.saveToFirestore('settings', this.settings);
         },
 
         exportJSONBackup() {
@@ -10863,52 +10589,7 @@ selectClient(clientId) {
           a.click();
         },
 
-        // ===== ADATA CLOUD SYNC ENGINE =====
-        getCloudSession() {
-          return this.cloudSession || null;
-        },
-
-        closeCloud() {
-          if (this.realtimeConn) { this.realtimeConn.close(); this.realtimeConn = null; }
-          this.cloudQueue = null;
-          this.cloudDb = null;
-          this.cloudConnected = false;
-        },
-
-        stripCloudMeta() {
-          const strip = (arr) => { if (arr) arr.forEach(r => { delete r._cloudId; delete r.updatedAt; }); };
-          strip(this.clients);
-          strip(this.ledgerEntries);
-          strip(this.payments);
-          strip(this.rates);
-          strip(this.snapshots);
-          strip(this.users);
-          strip(this.stores);
-          strip(this.challanRecords);
-          delete this.settings._cloudId;
-          delete this.settings.updatedAt;
-        },
-
-        hasLocalData() {
-          return this.clients.length > 0 || this.ledgerEntries.length > 0 ||
-                 this.payments.length > 0 || this.rates.length > 0 || this.users.length > 0;
-        },
-
-        collectionField(collection) {
-          const map = {
-            settings: 'settings',
-            clients: 'clients',
-            ledger_entries: 'ledgerEntries',
-            payments: 'payments',
-            rates: 'rates',
-            monthly_bill_snapshots: 'snapshots',
-            expenses: 'expenses',
-            users: 'users',
-            stores: 'stores',
-            challan_records: 'challanRecords'
-          };
-          return map[collection] || collection;
-        },
+        // (CLOUD SYNC REMOVED)
 
         findLocalRecord(collection, localId) {
           if (collection === 'settings') return this.settings;
@@ -10916,387 +10597,31 @@ selectClient(clientId) {
           return arr.find(r => r.id === localId) || null;
         },
 
-        // Build the server payload for a record. Client-assigned ids are never sent;
-        // cross-references use the parent client's server UUID when known.
-        cloudPayload(collection, rec) {
-          const out = {};
-          Object.keys(rec).forEach(k => {
-            if (k === 'id' || k === '_cloudId') return;
-            if (collection === 'settings' && (k === 'cloudServerUrl' || k === 'cloudAppId' || k === 'cloudApiKey')) return;
-            out[k] = rec[k];
-          });
-          if (collection !== 'clients' && collection !== 'settings' && rec.clientId) {
-            const parent = this.clients.find(c => c.id === rec.clientId);
-            out.clientId = (parent && parent._cloudId) ? parent._cloudId : rec.clientId;
-          }
-          out.updatedAt = Date.now();
-          return out;
-        },
+        // (CLOUD SYNC REMOVED - app now runs in offline/local mode only)
 
-        setupQueuePrepare() {
-          this.cloudQueue.onPrepare = (op) => {
-            if (op.op === 'create' || op.op === 'update') {
-              const rec = this.findLocalRecord(op.collection, op.localId);
-              return rec ? this.cloudPayload(op.collection, rec) : null;
-            }
-            return op.patch || null;
-          };
-        },
+        // (CLOUD SYNC REMOVED)
 
-        // Queue a create (no server id yet) or update (has server id) for a record.
-        // Optimistic immediate flush with 400ms debounce so rapid writes batch together.
-        enqueueRecordSync(collection, rec) {
-          if (!this.cloudQueue || !rec) return;
-          if (rec._cloudId) {
-            this.cloudQueue.enqueue({ op: 'update', collection, id: rec._cloudId, localId: rec.id });
-          } else {
-            this.cloudQueue.enqueue({ op: 'create', collection, localId: rec.id });
-          }
-          if (!this.suppressSync && this.cloudConnected) {
-            clearTimeout(this._flushTimer);
-            this._flushTimer = setTimeout(() => { if(this.cloudQueue) this.cloudQueue.flush(); }, 400);
-          }
-        },
+        // (CLOUD SYNC REMOVED)
 
-        // Called by the queue after a successful create POST: adopt the server-assigned
-        // UUID and rebind any dependent records that referenced the temporary local id.
-        adoptServerId(collection, localId, cloudId) {
-          const rec = this.findLocalRecord(collection, localId);
-          if (!rec) return;
-          rec._cloudId = cloudId;
-          rec.updatedAt = Date.now();
-          if (collection === 'clients') this.afterClientSynced(rec, cloudId);
-          this.saveLocalData();
-        },
+        // (CLOUD SYNC REMOVED)
 
-        // When a client finally gets its server UUID, re-point every already-synced
-        // dependent record so the server copies reference the real client UUID.
-        afterClientSynced(client, cloudId) {
-          const oldId = client.id;
-          const colMap = { ledgerEntries: 'ledger_entries', payments: 'payments', rates: 'rates', snapshots: 'monthly_bill_snapshots' };
-          Object.keys(colMap).forEach(field => {
-            (this[field] || []).forEach(r => {
-              if (r.clientId === oldId && r._cloudId) {
-                this.cloudQueue.enqueue({ op: 'update', collection: colMap[field], id: r._cloudId, localId: r.id });
-              }
-            });
-          });
-        },
-
-        async startCloud() {
-          this.closeCloud();
-          const cfg = {
-            serverUrl: this.settings.cloudServerUrl,
-            appId: this.settings.cloudAppId,
-            apiKey: this.settings.cloudApiKey
-          };
-          this.cloudDb = new AdataDB(cfg);
-          this.cloudQueue = new SyncQueue(cfg.appId, this.cloudDb);
-          this.cloudQueue.onStatus = (st, txt) => { this.syncStatus = st; this.syncStatusText = txt; };
-          this.cloudQueue.onError = (op, err) => { /* queue retries or drops silently */ };
-          this.cloudQueue.onOpSuccess = (op, id) => { this.adoptServerId(op.collection, op.localId, id); };
-          this.cloudQueue.onWrote = () => { this.lastOwnWrite = Date.now(); };
-          this.setupQueuePrepare();
-
-          try {
-            await this.cloudDb.health();
-          } catch (e) {
-            this.syncStatus = 'offline';
-            this.syncStatusText = 'অফলাইন মোড (ক্লাউড অনুপলব্ধ)';
-            return;
-          }
-
-          try {
-            this.showToastMsg('ডেটা সার্ভার থেকে লোড হচ্ছে...', 'loading', 0);
-            await this.pullAndMerge();
-            this.ensureAdminUser();
-            this.ensureDefaultStores();
-            this.showToastMsg('ডেটা লোড সম্পন্ন ✓', 'success', 2000);
-            this.realtimeConn = setupRealtime(cfg, () => {
-              // Ignore SSE events caused by our own writes.
-              if (Date.now() - (this.lastOwnWrite || 0) > 2000) this.refreshFromCloud();
-            });
-            this.cloudConnected = true;
-            this.syncStatus = 'synced';
-            this.syncStatusText = 'অনলাইন সিঙ্কড';
-          } catch (e) {
-            this.syncStatus = 'offline';
-            this.syncStatusText = 'অফলাইন মোড (সিঙ্ক ব্যর্থ)';
-          }
-        },
-
-        async pullAndMerge() {
-          const data = await fetchAllCollections(this.cloudDb, ADATA_COLLECTIONS);
-          const serverClients = data.clients || [];
-
-          // First contact with a server that already holds data (synced by another
-          // device): adopt it wholesale so local sample/seed records are discarded
-          // instead of being merged in and duplicated.
-          const neverSynced = !this.settings._cloudId &&
-            !this.clients.some(c => c._cloudId) &&
-            !this.ledgerEntries.some(e => e._cloudId) &&
-            !this.payments.some(p => p._cloudId) &&
-            !this.rates.some(r => r._cloudId) &&
-            !this.snapshots.some(s => s._cloudId) &&
-            !this.expenses.some(x => x._cloudId);
-
-          if (serverClients.length > 0 && this.clients.length === 0) {
-            // Fresh browser, populated server: just take the server's data.
-            this.adoptServerData(data);
-          } else if (serverClients.length === 0 && this.clients.length === 0) {
-            // Empty server + empty browser: nothing to pull or push yet.
-            ADATA_COLLECTIONS.forEach(c => this.mergeCollection(c, data[c] || []));
-          } else if (neverSynced && serverClients.length > 0) {
-            // Local data never touched the server but the server has data:
-            // trust the server wholesale.
-            this.adoptServerData(data);
-          } else {
-            ADATA_COLLECTIONS.forEach(c => this.mergeCollection(c, data[c] || []));
-          }
-
-          this.suppressSync = true;
-          try {
-            this.remapClientRefs();
-            this.recalculateAllClients();
-            this.initBulkRows();
-            this.initPaymentRows();
-            if (!this.clients.some(c => c.id === this.selectedClientId)) {
-              this.selectedClientId = this.clients.length ? this.clients[0].id : null;
-            }
-            // If the logged-in user was deleted or deactivated, force a logout.
-            if (this.currentUserId && !this.users.some(u => u.id === this.currentUserId)) {
-              this.logoutUser();
-            }
-          } finally {
-            this.suppressSync = false;
-          }
-          try { localStorage.setItem('mrt_users_cache', JSON.stringify(this.users)); } catch(e) {}
-          this.cloudSession = { appId: this.settings.cloudAppId, serverUrl: this.settings.cloudServerUrl };
-        },
+        // (CLOUD SYNC REMOVED)
 
         // Adopt the server's data as the local base (used on first contact).
         // Local ids become the server UUIDs so cross-references stay consistent.
-        adoptServerData(data) {
-          const adoptList = (key, field) => {
-            this[field] = (data[key] || []).map(s => {
-              const rec = Object.assign({}, s);
-              rec.id = s.id;
-              rec._cloudId = s.id;
-              return rec;
-            });
-          };
-          adoptList('clients', 'clients');
-          adoptList('ledger_entries', 'ledgerEntries');
-          adoptList('payments', 'payments');
-          adoptList('rates', 'rates');
-          adoptList('monthly_bill_snapshots', 'snapshots');
-          adoptList('expenses', 'expenses');
-          adoptList('users', 'users');
-          adoptList('stores', 'stores');
-          adoptList('challan_records', 'challanRecords');
-          if (data.settings && data.settings.length) {
-            const srv = data.settings[0];
-            const applied = Object.assign({}, this.settings);
-            ['businessName', 'businessSubtitle', 'businessAddress', 'businessPhones', 'globalRate', 'chargeBasis', 'laborRatePerKg', 'pinCode', 'defaultStoreId', 'nextChallanNo', 'useChallanNo'].forEach(k => {
-              if (srv[k] !== undefined) applied[k] = srv[k];
-            });
-            // Deep merge printConfig so server values reach the client
-            if (srv.printConfig && typeof srv.printConfig === 'object') {
-              applied.printConfig = Object.assign({}, applied.printConfig || {}, srv.printConfig);
-            }
-            applied._cloudId = srv.id;
-            applied.updatedAt = srv.updatedAt || Date.now();
-            this.settings = applied;
-          }
-        },
+        // (CLOUD SYNC REMOVED)
 
-        async refreshFromCloud() {
-          if (!this.cloudDb) return;
-          clearTimeout(this._refreshTimer);
-          this._refreshTimer = setTimeout(async () => {
-            try {
-              this.syncStatus = 'syncing';
-              this.syncStatusText = 'ডেটা আপডেট হচ্ছে...';
-              await this.pullAndMerge();
-              this.syncStatus = 'synced';
-              this.syncStatusText = 'অনলাইন সিঙ্কড';
-            } catch (e) {
-              this.syncStatus = 'offline';
-              this.syncStatusText = 'অফলাইন মোড (সিঙ্ক ব্যর্থ)';
-            }
-          }, 400);
-        },
+        // (CLOUD SYNC REMOVED)
 
-        // Merge one collection: server is source of truth; local wins only when it
-        // carries a newer updatedAt (last-write-wins). Unsynced local records are
-        // enqueued for upload; server-only records are adopted.
-        mergeCollection(collection, serverItems) {
-          const field = this.collectionField(collection);
-          if (collection === 'settings') { this.mergeSettings(serverItems); return; }
-          const arr = this[field] || [];
-          const serverById = {};
-          (serverItems || []).forEach(s => { serverById[s.id] = s; });
+        // (CLOUD SYNC REMOVED)
 
-          const result = [];
-          const seenCloud = {};
-          const seenLocal = {};
+        // (CLOUD SYNC REMOVED)
 
-          // Dedup by _cloudId (server uuid) and by local id so a record is never
-          // added twice, even if the same server record already exists locally.
-          const push = (rec) => {
-            const cloudKey = rec._cloudId || rec.id;
-            if (cloudKey && seenCloud[cloudKey]) return false;
-            if (rec._cloudId) seenCloud[rec._cloudId] = true;
-            if (rec.id) seenLocal[rec.id] = true;
-            result.push(rec);
-            return true;
-          };
+        // (CLOUD SYNC REMOVED)
 
-          arr.forEach(local => {
-            const srv = local._cloudId ? serverById[local._cloudId] : null;
-            if (srv) {
-              const lu = Number(local.updatedAt || 0);
-              const su = Number(srv.updatedAt || 0);
-              if (su > lu) {
-                const merged = Object.assign({}, local, srv);
-                merged.id = local.id;   // keep the stable local key
-                merged._cloudId = srv.id;
-                push(merged);
-              } else {
-                push(local);
-                if (lu > su) this.enqueueRecordSync(collection, local);
-              }
-              seenCloud[srv.id] = true;
-            } else {
-              push(local);
-              this.enqueueRecordSync(collection, local);
-            }
-          });
+        // (CLOUD SYNC REMOVED)
 
-          serverItems.forEach(srv => {
-            if (seenCloud[srv.id] || seenLocal[srv.id]) return;
-            const rec = Object.assign({}, srv);
-            rec._cloudId = srv.id;
-            push(rec);
-          });
-
-          this[field] = result;
-        },
-
-        mergeSettings(serverItems) {
-          if (!serverItems || !serverItems.length) {
-            this.enqueueRecordSync('settings', this.settings);
-            return;
-          }
-          const srv = serverItems[0];
-          const lu = Number(this.settings.updatedAt || 0);
-          const su = Number(srv.updatedAt || 0);
-          if (su > lu) {
-            const applied = Object.assign({}, this.settings);
-            ['businessName', 'businessSubtitle', 'businessAddress', 'businessPhones', 'globalRate', 'chargeBasis', 'laborRatePerKg', 'pinCode', 'defaultStoreId', 'nextChallanNo', 'useChallanNo'].forEach(k => {
-              if (srv[k] !== undefined) applied[k] = srv[k];
-            });
-            // Deep merge printConfig so both local and server values are preserved
-            if (srv.printConfig && typeof srv.printConfig === 'object') {
-              applied.printConfig = Object.assign({}, applied.printConfig || {}, srv.printConfig);
-            }
-            applied._cloudId = srv.id;
-            applied.updatedAt = srv.updatedAt || Date.now();
-            this.settings = applied;
-            // keep header challan in sync
-            if (applied.nextChallanNo) this.bulkStartChallan = applied.nextChallanNo;
-          } else if (lu > su) {
-            this.enqueueRecordSync('settings', this.settings);
-          }
-        },
-
-        // Map server-side client UUIDs back to local client ids so the UI keeps working.
-        remapClientRefs() {
-          const map = {};
-          this.clients.forEach(c => { if (c._cloudId) map[c._cloudId] = c.id; });
-          const fix = (arr) => {
-            (arr || []).forEach(r => {
-              if (r.clientId && map[r.clientId]) r.clientId = map[r.clientId];
-            });
-          };
-          fix(this.ledgerEntries);
-          fix(this.payments);
-          fix(this.rates);
-          fix(this.snapshots);
-        },
-
-        async testCloudConnection() {
-          if (!this.requirePerm('cloud')) return;
-          this.syncStatus = 'syncing';
-          this.syncStatusText = 'কানেক্টিং...';
-          try {
-            const db = new AdataDB({
-              serverUrl: this.settings.cloudServerUrl,
-              appId: this.settings.cloudAppId,
-              apiKey: this.settings.cloudApiKey
-            });
-            await db.health();
-            let count = 0;
-            try {
-              const data = await fetchAllCollections(db, ADATA_COLLECTIONS);
-              Object.keys(data).forEach(k => { count += (data[k] || []).length; });
-            } catch (e) { /* health OK is sufficient */ }
-            this.syncStatus = 'synced';
-            this.syncStatusText = 'অনলাইন সিঙ্কড';
-            alert('Adata Cloud Server কানেকশন সফল হয়েছে!' + (count ? ' (' + count + ' টি রেকর্ড পাওয়া গেছে)' : ''));
-          } catch (e) {
-            this.syncStatus = 'offline';
-            this.syncStatusText = 'অফলাইন মোড (কানেকশন ব্যর্থ)';
-            alert('কানেকশন ব্যর্থ হয়েছে: ' + (e && e.message ? e.message : 'সার্ভার রেসপন্স করছে না'));
-          }
-        },
-
-        async triggerManualSync() {
-          if (!this.requirePerm('cloud')) return;
-          if (!this.cloudQueue) { alert('ক্লাউড কনফিগার করা হয়নি'); return; }
-          this.syncStatus = 'syncing';
-          this.syncStatusText = 'ডেটা সিঙ্ক হচ্ছে...';
-          await this.cloudQueue.flush();
-          await this.refreshFromCloud();
-          if (this.syncStatus !== 'offline') {
-            this.syncStatus = 'synced';
-            this.syncStatusText = 'অনলাইন সিঙ্কড';
-            alert('সিঙ্ক সম্পন্ন হয়েছে!');
-          }
-        },
-
-        processSyncQueue() {
-          // Auto flush every 2s + immediate flush on wake.
-          if (this.cloudQueue) {
-            this.cloudQueue.flush();
-            if (!this.cloudConnected) this.tryReconnect();
-          }
-        },
-
-        // If we booted offline, quietly probe the server and resume
-        // full sync (pull + SSE) as soon as it comes back.
-        async tryReconnect() {
-          if (this.reconnecting || !this.cloudDb) return;
-          this.reconnecting = true;
-          try {
-            await this.cloudDb.health();
-            await this.pullAndMerge();
-            this.ensureAdminUser();
-            this.ensureDefaultStores();
-            if (this.realtimeConn) { try { this.realtimeConn.close(); } catch(e){} }
-            this.realtimeConn = setupRealtime({
-              serverUrl: this.settings.cloudServerUrl,
-              appId: this.settings.cloudAppId,
-              apiKey: this.settings.cloudApiKey
-            }, () => {
-              if (Date.now() - (this.lastOwnWrite || 0) > 2000) this.refreshFromCloud();
-            });
-            this.cloudConnected = true;
-            this.syncStatus = 'synced';
-            this.syncStatusText = 'অনলাইন সিঙ্কড';
-          } catch (e) { /* still offline */ }
-          this.reconnecting = false;
-        }
+        // (CLOUD SYNC REMOVED)
       }
     }
   </script>
