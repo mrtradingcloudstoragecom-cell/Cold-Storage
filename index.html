@@ -57,13 +57,13 @@ import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, w
 
     // FIREBASE CONFIGURATION
     const firebaseConfig = {
-      apiKey: "AIzaSyCM5dVfKJwHxJEV909dnyonPRaCcxrEQEk",
-      authDomain: "databas-77ad9.firebaseapp.com",
-      projectId: "databas-77ad9",
-      storageBucket: "databas-77ad9.firebasestorage.app",
-      messagingSenderId: "872254954140",
-      appId: "1:872254954140:web:8ef2060be37c55e6deab59",
-      measurementId: "G-YQ2Y5R0B9E"
+      apiKey: "AIzaSyAtpF7-s1__4l2cCnnKYXpbf_VF-FlGrJA",
+      authDomain: "databsa-mr-trading.firebaseapp.com",
+      projectId: "databsa-mr-trading",
+      storageBucket: "databsa-mr-trading.firebasestorage.app",
+      messagingSenderId: "646459637647",
+      appId: "1:646459637647:web:5c65b0d68f22d348e955fa",
+      measurementId: "G-GL89CY515N"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -5388,6 +5388,8 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
                 try {
                   await this.loadDataFromFirestore();
                   await this.ensureUserProfile(user);
+                  // অফলাইন/কোটা-থাকা pending লেখাগুলো এখন Firestore-এ পাঠাই (auto-sync)
+                  await this.syncPending();
                 } finally {
                   this.isLoading = false;
                   this.loadingMessage = 'কাজটি সম্পন্ন হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...';
@@ -5413,6 +5415,13 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
 
           window.addEventListener('resize', () => { this._mergeTick = ((this._mergeTick||0)+1) % 1000000; });
           setTimeout(() => { this._mergeTick = ((this._mergeTick||0)+1) % 1000000; }, 700);
+
+          // প্রতি ১৫ সেকেন্ডে pending (অফলাইন/কোটা-থাকা) লেখাগুলো Firestore-এ সমন্বিত করার
+          // চেষ্টা — কোটা রিসেট বা নেটওয়ার্ক ফিরলে ডেটা নিজে থেকেই চলে যাবে।
+          if (this._syncTimer) clearInterval(this._syncTimer);
+          this._syncTimer = setInterval(() => {
+            if (!this.isLocked) this.syncPending();
+          }, 15000);
         },
 
         // ===== AUTHENTICATION & ROLE-BASED ACCESS CONTROL =====
@@ -5496,6 +5505,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
             try {
               await this.loadDataFromFirestore();
               await this.ensureUserProfile(user);
+              await this.syncPending();
             } finally {
               this.isLoading = false;
               this.loadingMessage = 'কাজটি সম্পন্ন হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...';
@@ -5589,20 +5599,148 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           this._noteSynced('settings', this.settings);
         },
 
+        // ===== IndexedDB অফলাইন-প্রথম pending queue =====
+        // Firestore-এ লিখতে ব্যর্থ হলে (কোটা শেষ/অফলাইন) ডেটা হারাতে না দিয়ে IndexedDB-তে
+        // queue করে রাখি; পরে কোটা/নেটওয়ার্ক খালি হলে auto-sync-এ Firestore-এ চলে যায়।
+        _idbName: 'mrt_offline',
+        _idbVersion: 1,
+        _idbPromise: null,
+        _idbOpen() {
+          if (this._idbPromise) return this._idbPromise;
+          this._idbPromise = new Promise((resolve, reject) => {
+            if (!window.indexedDB) { reject(new Error('idb-unsupported')); return; }
+            const req = window.indexedDB.open(this._idbName, this._idbVersion);
+            req.onupgradeneeded = (e) => {
+              const db = e.target.result;
+              if (!db.objectStoreNames.contains('pending')) {
+                db.createObjectStore('pending', { keyPath: 'id' });
+              }
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+          });
+          // ব্যর্থ হলে পরের বার নতুন করে চেষ্টা করবে
+          this._idbPromise.catch(() => { this._idbPromise = null; });
+          return this._idbPromise;
+        },
+        async _idbPendingAdd(entry) {
+          try {
+            const db = await this._idbOpen();
+            return new Promise((resolve, reject) => {
+              const tx = db.transaction('pending', 'readwrite');
+              tx.objectStore('pending').put(entry);
+              tx.oncomplete = () => resolve();
+              tx.onerror = () => reject(tx.error);
+            });
+          } catch (e) { console.error("IDB add error:", e); }
+        },
+        async _idbPendingRemove(id) {
+          try {
+            const db = await this._idbOpen();
+            return new Promise((resolve, reject) => {
+              const tx = db.transaction('pending', 'readwrite');
+              tx.objectStore('pending').delete(id);
+              tx.oncomplete = () => resolve();
+              tx.onerror = () => reject(tx.error);
+            });
+          } catch (e) { console.error("IDB remove error:", e); }
+        },
+        async _idbPendingGetAll() {
+          try {
+            const db = await this._idbOpen();
+            return new Promise((resolve, reject) => {
+              const tx = db.transaction('pending', 'readonly');
+              const req = tx.objectStore('pending').getAll();
+              req.onsuccess = () => resolve(req.result || []);
+              req.onerror = () => reject(req.error);
+            });
+          } catch (e) { console.error("IDB getAll error:", e); return []; }
+        },
+
+        _pendingId(collection, docId) { return collection + '::' + docId; },
+
+        // সব pending অপারেশন Firestore-এ "পরিমাণ মতো" সমন্বিত করে (auto-sync)। একসাথে কেবল একটাই চলবে।
+        _syncBatchLimit: 8,
+        _replayPendingOp(entry) {
+          // কেবল Firestore-এ লেখা হয়েছে কিনা তা ধরি; quota-ধরলে 'quota' ফেরায় যাতে
+          // syncPending আর চাপ না দেয়। সফল হলে pending থেকে সরায়।
+          return new Promise(async (resolve) => {
+            if (!window.firebaseApp) { resolve('fail'); return; }
+            try {
+              const docRef = window.firebaseApp.doc(window.firebaseApp.collection(window.firebaseApp.db, entry.collection), entry.docId);
+              if (entry.op === 'delete') {
+                await this._withTimeout(window.firebaseApp.deleteDoc(docRef), 15000);
+              } else {
+                const clean = JSON.parse(JSON.stringify(entry.data || {}));
+                await this._withTimeout(window.firebaseApp.setDoc(docRef, clean, { merge: true }), 15000);
+              }
+              await this._idbPendingRemove(entry.id);
+              resolve('ok');
+            } catch (e) {
+              console.error("Pending replay [", entry.collection, "::", entry.docId, "] error:", e && e.code);
+              const code = e && e.code ? String(e.code) : '';
+              if (code === 'resource-exhausted' || code === 'firebase-timeout' || code === 'unavailable' || code === 'deadline-exceeded') {
+                resolve('quota');
+              } else {
+                resolve('fail');
+              }
+            }
+          });
+        },
+
+        // সব pending অপারেশন Firestore-এ "পরিমাণ মতো" সমন্বিত করে (auto-sync)।
+        // প্রতিটি চক্রে সীমিত সংখ্যক (batch) — quota/ব্যবস্থা শেষ হলে চক্র থামে,
+        // পরের চক্রে বাকি লেখা যাবে। একসাথে কেবল একটাই sync চলবে।
+        _syncing: false,
+        async syncPending() {
+          if (this._syncing) return;
+          if (!window.firebaseApp) return;
+          this._syncing = true;
+          try {
+            const pending = await this._idbPendingGetAll();
+            pending.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+            let sent = 0;
+            for (const entry of pending) {
+              if (sent >= this._syncBatchLimit) break;   // এই চক্রে সীমিত পরিমাণ
+              const status = await this._replayPendingOp(entry);
+              if (status === 'quota') break;             // সীমায় ধাক্কা — পরের চক্রে
+              if (status === 'ok') sent++;
+              // প্রতিটি লেখার মাঝে ছোট বিরতি — যাতে হঠাৎ অনেকগুলো লেখা না পড়ে
+              await new Promise(r => setTimeout(r, 350));
+            }
+          } catch (e) {
+            console.error("syncPending error:", e);
+          } finally {
+            this._syncing = false;
+          }
+        },
+
         async saveToFirestore(collection, rec) {
-          if (!window.firebaseApp || !rec) return;
+          if (!rec) return;
           const docId = rec.id || rec._id || (collection === 'settings' ? 'app_settings' : null);
           if (!docId) { console.error("Firestore save [", collection, "] skipped — record has no id"); return; }
+          // ১) সর্বদা IndexedDB pending-এ যোগ করি — ডেটা হারাবে না
+          const pid = this._pendingId(collection, docId);
+          await this._idbPendingAdd({ id: pid, collection, docId, op: 'put', data: rec, ts: Date.now() });
+          // ২) Firestore-এ লিখি; সফল হলে pending থেকে সরাই
+          if (!window.firebaseApp) return;
           try {
             const docRef = window.firebaseApp.doc(window.firebaseApp.collection(window.firebaseApp.db, collection), docId);
-            // JSON রাউন্ড-ট্রিপে undefined ফিল্ড বাদ যায় (Firestore undefined মান নেয় না)।
             const clean = JSON.parse(JSON.stringify(rec));
             await this._withTimeout(window.firebaseApp.setDoc(docRef, clean, { merge: true }), 15000);
             this._noteSynced(collection, rec);
+            await this._idbPendingRemove(pid);
           } catch (e) {
             console.error("Firestore save [", collection, "] error:", e);
             const mapped = this._hintForError(e && e.code);
-            this.showToastMsg(mapped.msg, 'error', 8000);
+            // কোটা/অস্থায়ী সীমা হলে ডেটা অপেক্ষমাণ queue-এ নিরাপদে আছে — ভয়ের বার্তা নয়,
+            // শুধু জানিয়ে দিই পরবর্তীতে Cloud-এ সিঙ্ক হবে।
+            if (mapped.cat === 'quota') {
+              this.showToastMsg('সেভ হয়েছে! ক্লাউডে অটো-সিঙ্ক হবে।', 'saving', 3000);
+            } else {
+              this.showToastMsg(mapped.msg, 'error', 8000);
+            }
+            // ব্যর্থ — pending-এ থেকে যায়; auto-sync পরে মিলিয়ে দেবে
           }
         },
 
@@ -5613,14 +5751,25 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           this.showToastMsg('সেভ হয়েছে!', 'success');
         },
 
-async deleteFromFirestore(collection, id) {
+        async deleteFromFirestore(collection, id) {
+          if (!id) return;
+          // ১) সর্বদা IndexedDB pending-এ যোগ করি — ডিলিটও হারাবে না
+          const pid = this._pendingId(collection, id);
+          await this._idbPendingAdd({ id: pid, collection, docId: id, op: 'delete', data: null, ts: Date.now() });
+          // ২) Firestore-এ ডিলিট; সফল হলে pending থেকে সরাই
           if (!window.firebaseApp) return;
           try {
             await this._withTimeout(window.firebaseApp.deleteDoc(window.firebaseApp.doc(window.firebaseApp.collection(window.firebaseApp.db, collection), id)), 15000);
+            await this._idbPendingRemove(pid);
           } catch (e) {
             console.error("Firestore delete error:", e);
             const mapped = this._hintForError(e && e.code);
-            this.showToastMsg(mapped.msg, 'error', 8000);
+            if (mapped.cat === 'quota') {
+              this.showToastMsg('ডিলিট হয়েছে! ক্লাউডে অটো-সিঙ্ক হবে।', 'saving', 3000);
+            } else {
+              this.showToastMsg(mapped.msg, 'error', 8000);
+            }
+            // ব্যর্থ — pending-এ থেকে যায়
           }
         },
 
@@ -5640,12 +5789,15 @@ async deleteFromFirestore(collection, id) {
           // আগের সাবস্ক্রিপশন বন্ধ করে নতুন বসাই (রিলগইন/পুনরায় লোড হলে ডুপ্লিকেট এড়াতে)।
           this._unsubscribeAll();
 
-          const applyCollection = (col, docs) => {
+          const applyCollection = async (col, docs) => {
             const data = docs.map(d => ({ ...d.data(), id: d.id }));
+            // pending (অসিঙ্কিত) লেখা/ডিলিট সার্ভার ডেটার উপর আরোপ করি — যেন ইউজার
+            // নিজের করা কিন্তু এখনও Cloud-এ না-পৌঁছানো পরিবর্তন অদৃশ্য না হয়।
+            const merged = await this._mergePending(col, data);
             const fieldMap = { ledger_entries: 'ledgerEntries', monthly_bill_snapshots: 'snapshots', challan_records: 'challanRecords' };
             const field = fieldMap[col] || col;
             if (col === 'settings') {
-              const serverData = data[0] || {};
+              const serverData = merged[0] || {};
               ['billLayout','masterLayout','masterSummaryLayout','printConfig'].forEach(k => delete serverData[k]);
               this.settings = { ...this.settings, ...serverData };
               delete this.settings.billLayout;
@@ -5653,9 +5805,9 @@ async deleteFromFirestore(collection, id) {
               delete this.settings.masterSummaryLayout;
               delete this.settings.printConfig;
             } else {
-              this[field] = data;
+              this[field] = merged;
             }
-            this._noteSyncedForCollection(col, data);
+            this._noteSyncedForCollection(col, merged);
           };
 
           try {
@@ -5716,7 +5868,30 @@ async deleteFromFirestore(collection, id) {
         // এক কালেকশনের snapshot-কে স্টেটে প্রয়োগ করে। রিয়েল-টাইম আপডেটে ডেরাইভড
         // (হিসাব-হীন) ফিল্ডগুলো লোকালে আবার হিসাব করার দরকার হয় না — শুধু কাঁচা ডেটা বদলাই।
         _applySnapshot(col, snap, applyCollection) {
-          applyCollection(col, snap.docs);
+          Promise.resolve(applyCollection(col, snap.docs)).catch(err => console.error("apply snapshot error [", col, "]:", err));
+        },
+
+        // সার্ভার-আপডেটেড ডেটার উপর pending (অসিঙ্কিত) অপারেশন আরোপ করি।
+        // 'put' → ঐ docId-র ডেটা স্থানীয় সংস্করণ দিয়ে বদল; 'delete' → রেকর্ড বাদ।
+        async _mergePending(collection, serverArr) {
+          try {
+            const pending = await this._idbPendingGetAll();
+            const mine = pending.filter(p => p.collection === collection);
+            if (!mine.length) return serverArr;
+            const byId = new Map((serverArr || []).map(r => [r.id, r]));
+            mine.forEach(p => {
+              if (p.op === 'put' && p.data) {
+                const rec = JSON.parse(JSON.stringify(p.data));
+                byId.set(p.docId, rec);
+              } else if (p.op === 'delete') {
+                byId.delete(p.docId);
+              }
+            });
+            return Array.from(byId.values());
+          } catch (e) {
+            console.error("IDB merge error:", e);
+            return serverArr || [];
+          }
         },
 
         // প্রতিটা কালেকশনের রেকর্ডগুলো সিঙ্কড চিহ্নিত করি (রিয়েল-টাইম আপডেটের পরেও
