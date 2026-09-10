@@ -1,4 +1,6 @@
 
+
+
 <!DOCTYPE html>
 <html lang="bn" class="h-full bg-[#F5F5F7] antialiased">
 <head>
@@ -54,24 +56,24 @@
   <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, writeBatch, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, where, orderBy, limit, startAfter, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     // FIREBASE CONFIGURATION
     const firebaseConfig = {
-      apiKey: "AIzaSyAtpF7-s1__4l2cCnnKYXpbf_VF-FlGrJA",
-      authDomain: "databsa-mr-trading.firebaseapp.com",
-      projectId: "databsa-mr-trading",
-      storageBucket: "databsa-mr-trading.firebasestorage.app",
-      messagingSenderId: "646459637647",
-      appId: "1:646459637647:web:5c65b0d68f22d348e955fa",
-      measurementId: "G-GL89CY515N"
+      apiKey: "AIzaSyCM5dVfKJwHxJEV909dnyonPRaCcxrEQEk",
+      authDomain: "databas-77ad9.firebaseapp.com",
+      projectId: "databas-77ad9",
+      storageBucket: "databas-77ad9.firebasestorage.app",
+      messagingSenderId: "872254954140",
+      appId: "1:872254954140:web:8ef2060be37c55e6deab59",
+      measurementId: "G-YQ2Y5R0B9E"
     };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    window.firebaseApp = { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, writeBatch, onSnapshot };
+    window.firebaseApp = { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, where, orderBy, limit, startAfter, getDoc };
     window.__firebaseReady = true;
     window.dispatchEvent(new CustomEvent('firebase-ready'));
   </script>
@@ -5043,8 +5045,6 @@ import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, w
         isLoading: false,
         loadingMessage: 'কাজটি সম্পন্ন হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...',
         _loadInFlight: false,
-        _syncedHashes: {},
-        _idbUnavailable: false,
         _rtListeners: [],
         _dataLoaded: false,
         activeTab: 'dashboard',
@@ -5052,6 +5052,7 @@ import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, w
         darkMode: false,
         sidebarCollapsed: false,
         loginForm: { email: '', password: '' },
+
         loginError: false,
         loginErrorMessage: '',
         isLoggingIn: false,
@@ -5393,12 +5394,10 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
                 this.isLocked = false;
                 this.isLoading = true;
                 this.loadingMessage = 'ডেটা লোড হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...';
-                try {
-                  await this.loadDataFromFirestore();
-                  await this.ensureUserProfile(user);
-                  // অফলাইন/কোটা-থাকা pending লেখাগুলো এখন Firestore-এ পাঠাই (auto-sync)
-                  await this.syncPending();
-                } finally {
+try {
+               await this.loadDataFromFirestore();
+               await this.ensureUserProfile(user);
+             } finally {
                   this.isLoading = false;
                   this.loadingMessage = 'কাজটি সম্পন্ন হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...';
                 }
@@ -5424,13 +5423,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           window.addEventListener('resize', () => { this._mergeTick = ((this._mergeTick||0)+1) % 1000000; });
           setTimeout(() => { this._mergeTick = ((this._mergeTick||0)+1) % 1000000; }, 700);
 
-          // প্রতি ১৫ সেকেন্ডে pending (অফলাইন/কোটা-থাকা) লেখাগুলো Firestore-এ সমন্বিত করার
-          // চেষ্টা — কোটা রিসেট বা নেটওয়ার্ক ফিরলে ডেটা নিজে থেকেই চলে যাবে।
-          if (this._syncTimer) clearInterval(this._syncTimer);
-          this._syncTimer = setInterval(() => {
-            if (!this.isLocked) this.syncPending();
-          }, 15000);
-        },
+},
 
         // ===== AUTHENTICATION & ROLE-BASED ACCESS CONTROL =====
         get currentUser() {
@@ -5511,10 +5504,9 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
             this.isLoading = true;
             this.loadingMessage = 'ডেটা লোড হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...';
             try {
-              await this.loadDataFromFirestore();
-              await this.ensureUserProfile(user);
-              await this.syncPending();
-            } finally {
+await this.loadDataFromFirestore();
+               await this.ensureUserProfile(user);
+             } finally {
               this.isLoading = false;
               this.loadingMessage = 'কাজটি সম্পন্ন হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...';
             }
@@ -5548,7 +5540,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
 
 
         _settingsForFirestore() {
-          // Print/Bill layout ডিজাইন কন্ট্রোল ফায়ারস্টোরে যায় না — শুধু লোকাল (localStorage)।
+          // Print/Bill layout ডিজাইন কন্ট্রোল ফায়ারস্টোরে যায় না — শুধু লোকালে থাকে।
           const s = { ...this.settings };
           delete s.billLayout;
           delete s.masterLayout;
@@ -5557,11 +5549,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           return s;
         },
 
-        // ===== CENTRAL PERSISTENCE LAYER =====
-        _hashOf(rec) {
-          try { return JSON.stringify(rec); } catch (e) { return ''; }
-        },
-        // Firestore error-code → কারিগরি না দেখিয়ে ব্যবহারযোগ্য বাংলা নির্দেশ
+        // ===== FIRESTORE PERSISTENCE LAYER =====
         _hintForError(code) {
           const c = code ? String(code) : 'unknown';
           if (c === 'not-found' || c === 'failed-precondition') {
@@ -5586,334 +5574,45 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
             );
           });
         },
-        _noteSynced(collection, rec) {
-          if (!rec || rec.id == null) return;
-          this._syncedHashes = this._syncedHashes || {};
-          this._syncedHashes[collection] = this._syncedHashes[collection] || {};
-          this._syncedHashes[collection][rec.id] = this._hashOf(rec);
-        },
-        _isSynced(collection, rec) {
-          if (!rec || rec.id == null) return false;
-          return !!(this._syncedHashes && this._syncedHashes[collection] && this._syncedHashes[collection][rec.id] === this._hashOf(rec));
-        },
-        _initSyncedHashes() {
-          this._syncedHashes = {};
-          const cols = {
-            clients: this.clients, ledger_entries: this.ledgerEntries, payments: this.payments,
-            rates: this.rates, monthly_bill_snapshots: this.snapshots, expenses: this.expenses,
-            users: this.users, stores: this.stores, challan_records: this.challanRecords
-          };
-          Object.keys(cols).forEach(col => (cols[col] || []).forEach(rec => this._noteSynced(col, rec)));
-          this._noteSynced('settings', this.settings);
-        },
+saveToFirestore(col, rec) {
+           if (!rec) return;
+           const docId = rec.id || rec._id || (col === 'settings' ? 'app_settings' : null);
+           if (!docId) { console.error("Firestore save [", col, "] skipped — no id"); return; }
+           if (!window.firebaseApp) return;
+           const docRef = window.firebaseApp.doc(window.firebaseApp.collection(window.firebaseApp.db, col), docId);
+           const clean = JSON.parse(JSON.stringify(rec));
+           window.firebaseApp.setDoc(docRef, clean, { merge: true })
+             .then(() => { this.syncStatus = 'synced'; this.syncStatusText = 'সব সেভ হয়েছে'; })
+             .catch(e => {
+               console.error("Firestore bg save [", col, "] error:", e);
+               const mapped = this._hintForError(e && e.code);
+               this.syncStatus = 'offline';
+               this.syncStatusText = 'সিঙ্ক পরবর্তীতে হবে';
+               if (mapped.cat !== 'quota') this.showToastMsg(mapped.msg, 'error', 5000);
+             });
+         },
 
-        // ===== IndexedDB অফলাইন-প্রথম স্তর (local mirror + pending) =====
-        // IndexedDB-ই লোকালের মূল ভান্ডার: 'data' store-এ প্রতিটি কালেকশনের ডেটার হুবহু
-        // কপি থাকে (রিলোড/অফলাইনে কখনো খালি নয়), আর 'pending' store-এ কেবল সেসব লেখা
-        // জমা থাকে যা এখনো Cloud-এ পৌঁছায়নি। প্রতি সেভ: আগে mirror → তারপর Firestore;
-        // প্রতি লোড: আগে mirror থেকে UI → তারপর Firestore snapshot দিয়ে মিলানো।
-        _idbName: 'mrt_offline',
-        _idbVersion: 2,
-        _idbPromise: null,
-        _idbOpen() {
-          if (this._idbPromise) return this._idbPromise;
-          this._idbPromise = new Promise((resolve, reject) => {
-            if (!window.indexedDB) { reject(new Error('idb-unsupported')); return; }
-            const req = window.indexedDB.open(this._idbName, this._idbVersion);
-            req.onupgradeneeded = (e) => {
-              const db = e.target.result;
-              if (!db.objectStoreNames.contains('pending')) {
-                db.createObjectStore('pending', { keyPath: 'id' });
-              }
-              if (!db.objectStoreNames.contains('data')) {
-                db.createObjectStore('data', { keyPath: 'id' });
-              }
-            };
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => reject(req.error);
-          });
-          // ব্যর্থ হলে পরের বার নতুন করে চেষ্টা করবে
-          this._idbPromise.catch(() => { this._idbPromise = null; });
-          return this._idbPromise;
-        },
-        _idbLocalId(collection, docId) { return collection + '::' + docId; },
-        // local mirror-এ একটি রেকর্ড লেখে (upsert)।
-        async _idbLocalAdd(collection, rec, docId) {
-          const realDocId = docId != null ? docId : rec.id;
-          const id = this._idbLocalId(collection, realDocId);
-          const db = await this._idbOpen();
-          await new Promise((resolve, reject) => {
-            const tx = db.transaction('data', 'readwrite');
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error || new Error('IDB transaction error'));
-            tx.onabort = () => reject(tx.error || new Error('IDB transaction aborted'));
-            tx.objectStore('data').put({ id, collection, docId: realDocId, data: JSON.parse(JSON.stringify(rec)) });
-          });
-        },
-        // local mirror থেকে একটি রেকর্ড মুছে দেয়।
-        async _idbLocalDelete(collection, docId) {
-          const db = await this._idbOpen();
-          await new Promise((resolve, reject) => {
-            const tx = db.transaction('data', 'readwrite');
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error || new Error('IDB transaction error'));
-            tx.onabort = () => reject(tx.error || new Error('IDB transaction aborted'));
-            tx.objectStore('data').delete(this._idbLocalId(collection, docId));
-          });
-        },
-        // একটি কালেকশনের সব local রেকর্ড (রেকর্ড অবজেক্ট অ্যারে) ফেরত দেয়।
-        async _idbLocalGetAll(collection) {
-          try {
-            const db = await this._idbOpen();
-            return await new Promise((resolve, reject) => {
-              const tx = db.transaction('data', 'readonly');
-              const req = tx.objectStore('data').getAll();
-              req.onsuccess = () => resolve((req.result || []).filter(r => r.collection === collection).map(r => r.data));
-              req.onerror = () => reject(req.error);
-            });
-          } catch (e) { console.error("IDB local getAll error:", e); return []; }
-        },
-        // কালেকশনের mirror-কে সার্ভার-সংশোধিত তালিকা দিয়ে সম্পূর্ণ বদলায় (sync করার পর)।
-        async _idbLocalReplaceCollection(collection, recs) {
-          const db = await this._idbOpen();
-          await new Promise((resolve, reject) => {
-            const tx = db.transaction('data', 'readwrite');
-            const store = tx.objectStore('data');
-            const req = store.getAll();
-            req.onsuccess = () => {
-              const stale = (req.result || []).filter(r => r.collection === collection && !recs.some(rec => rec.id === r.docId));
-              stale.forEach(r => store.delete(r.id));
-              recs.forEach(rec => rec && rec.id != null && store.put({ id: this._idbLocalId(collection, rec.id), collection, docId: rec.id, data: JSON.parse(JSON.stringify(rec)) }));
-            };
-            req.onerror = () => reject(req.error);
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error || new Error('IDB transaction error'));
-            tx.onabort = () => reject(tx.error || new Error('IDB transaction aborted'));
-          });
-        },
-        // local mirror থেকে পুরো ডেটা (সব কালেকশন, রেকর্ড-অবজেক্ট কীওয়াল) ফেরত দেয়।
-        async _idbLocalGetAllCollections() {
-          try {
-            const db = await this._idbOpen();
-            return await new Promise((resolve, reject) => {
-              const tx = db.transaction('data', 'readonly');
-              const req = tx.objectStore('data').getAll();
-              req.onsuccess = () => {
-                const map = {};
-                (req.result || []).forEach(r => {
-                  if (!r.collection) return;
-                  map[r.collection] = map[r.collection] || [];
-                  map[r.collection].push(r.data);
-                });
-                resolve(map);
-              };
-              req.onerror = () => reject(req.error);
-            });
-          } catch (e) { console.error("IDB local getAllCollections error:", e); return {}; }
-        },
-        async _idbPendingAdd(entry) {
-          const db = await this._idbOpen();
-          await new Promise((resolve, reject) => {
-            const tx = db.transaction('pending', 'readwrite');
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error || new Error('IDB transaction error'));
-            tx.onabort = () => reject(tx.error || new Error('IDB transaction aborted'));
-            tx.objectStore('pending').put(entry);
-          });
-        },
-        async _idbPendingRemove(id) {
-          const db = await this._idbOpen();
-          await new Promise((resolve, reject) => {
-            const tx = db.transaction('pending', 'readwrite');
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error || new Error('IDB transaction error'));
-            tx.onabort = () => reject(tx.error || new Error('IDB transaction aborted'));
-            tx.objectStore('pending').delete(id);
-          });
-        },
-        async _idbPendingGetAll() {
-          const db = await this._idbOpen();
-          return new Promise((resolve, reject) => {
-            const tx = db.transaction('pending', 'readonly');
-            const req = tx.objectStore('pending').getAll();
-            req.onsuccess = () => resolve(req.result || []);
-            req.onerror = () => reject(req.error);
-          });
-        },
+         async saveToFirestoreAsync(col, rec) {
+           if (!rec) return;
+           const docId = rec.id || rec._id || (col === 'settings' ? 'app_settings' : null);
+           if (!docId) { console.error("Firestore save [", col, "] skipped — no id"); return; }
+           if (!window.firebaseApp) return;
+           try {
+             const docRef = window.firebaseApp.doc(window.firebaseApp.collection(window.firebaseApp.db, col), docId);
+             const clean = JSON.parse(JSON.stringify(rec));
+             await this._withTimeout(window.firebaseApp.setDoc(docRef, clean, { merge: true }), 15000);
+             this.syncStatus = 'synced';
+             this.syncStatusText = 'সব সেভ হয়েছে';
+           } catch (e) {
+             console.error("Firestore save [", col, "] error:", e);
+             const mapped = this._hintForError(e && e.code);
+             this.syncStatus = 'offline';
+             this.syncStatusText = 'লোকালে সেভ হয়েছে';
+             if (mapped.cat === 'quota') this.showToastMsg('সেভ হয়েছে! ক্লাউডে অটো-সিঙ্ক হবে।', 'saving', 3000);
+             else this.showToastMsg(mapped.msg, 'error', 8000);
+           }
+         },
 
-        _pendingId(collection, docId) { return collection + '::' + docId; },
-
-        // সব pending অপারেশন Firestore-এ "পরিমাণ মতো" সমন্বিত করে (auto-sync)। একসাথে কেবল একটাই চলবে।
-        _syncBatchLimit: 8,
-        _replayPendingOp(entry) {
-          // কেবল Firestore-এ লেখা হয়েছে কিনা তা ধরি; quota-ধরলে 'quota' ফেরায় যাতে
-          // syncPending আর চাপ না দেয়। সফল হলে pending থেকে সরায়।
-          return new Promise(async (resolve) => {
-            if (!window.firebaseApp) { resolve('fail'); return; }
-            try {
-              const docRef = window.firebaseApp.doc(window.firebaseApp.collection(window.firebaseApp.db, entry.collection), entry.docId);
-              if (entry.op === 'delete') {
-                await this._withTimeout(window.firebaseApp.deleteDoc(docRef), 15000);
-              } else {
-                const clean = JSON.parse(JSON.stringify(entry.data || {}));
-                await this._withTimeout(window.firebaseApp.setDoc(docRef, clean, { merge: true }), 15000);
-              }
-              await this._idbPendingRemove(entry.id);
-              resolve('ok');
-            } catch (e) {
-              console.error("Pending replay [", entry.collection, "::", entry.docId, "] error:", e && e.code);
-              const code = e && e.code ? String(e.code) : '';
-              if (code === 'resource-exhausted' || code === 'firebase-timeout' || code === 'unavailable' || code === 'deadline-exceeded') {
-                resolve('quota');
-              } else {
-                resolve('fail');
-              }
-            }
-          });
-        },
-
-        // সব pending অপারেশন Firestore-এ "পরিমাণ মতো" সমন্বিত করে (auto-sync)।
-        // প্রতিটি চক্রে সীমিত সংখ্যক (batch) — quota/ব্যবস্থা শেষ হলে চক্র থামে,
-        // পরের চক্রে বাকি লেখা যাবে। একসাথে কেবল একটাই sync চলবে।
-        _syncing: false,
-        async syncPending() {
-          if (this._syncing) return;
-          if (!window.firebaseApp) return;
-          this._syncing = true;
-          this.syncStatus = 'syncing';
-          this.syncStatusText = 'ক্লাউডে সিঙ্ক হচ্ছে...';
-          try {
-            const pending = await this._idbPendingGetAll();
-            pending.sort((a, b) => (a.ts || 0) - (b.ts || 0));
-            let sent = 0;
-            for (const entry of pending) {
-              if (sent >= this._syncBatchLimit) break;   // এই চক্রে সীমিত পরিমাণ
-              const status = await this._replayPendingOp(entry);
-              if (status === 'quota') break;             // সীমায় ধাক্কা — পরের চক্রে
-              if (status === 'ok') sent++;
-              // প্রতিটি লেখার মাঝে ছোট বিরতি — যাতে হঠাৎ অনেকগুলো লেখা না পড়ে
-              await new Promise(r => setTimeout(r, 350));
-            }
-            const remaining = await this._idbPendingGetAll();
-            if (remaining.length > 0) {
-              this.syncStatus = 'offline';
-              this.syncStatusText = `লোকালে ${remaining.length}টি সেভ — সিঙ্ক পরবর্তীতে`;
-            } else {
-              this.syncStatus = 'synced';
-              this.syncStatusText = 'সব সেভ হয়েছে';
-            }
-          } catch (e) {
-            console.error("syncPending error:", e);
-            this.syncStatus = 'offline';
-            this.syncStatusText = 'লোকালে সেভ হয়েছে — সিঙ্ক পরবর্তীতে';
-          } finally {
-            this._syncing = false;
-          }
-        },
-
-        async saveToFirestore(collection, rec) {
-          if (!rec) return;
-          const docId = rec.id || rec._id || (collection === 'settings' ? 'app_settings' : null);
-          if (!docId) { console.error("Firestore save [", collection, "] skipped — record has no id"); return; }
-          // ১) সর্বদা local mirror (IndexedDB 'data')-এ কপি রাখি — রিলোড/অফলাইনেও হারাবে না।
-          try {
-            await this._idbLocalAdd(collection, rec, docId);
-            this._idbUnavailable = false;
-          } catch (_err) {
-            console.error("IDB mirror add failed [", collection, "]:", _err);
-            if (!this._idbUnavailable) {
-              this._idbUnavailable = true;
-              this.showToastMsg('অফলাইন সেভ সুবিধা পাওয়া যাচ্ছে না! ব্রাউজার সেটিংস/প্রাইভেট মোড পরীক্ষা করুন।', 'error', 6000);
-            }
-          }
-          // ২) pending-এও রাখি — যেন auto-sync আগে পৌঁছায়নি এমন লেখা চলে যেতে পারে।
-          const pid = this._pendingId(collection, docId);
-          let queued = false;
-          try {
-            await this._idbPendingAdd({ id: pid, collection, docId, op: 'put', data: rec, ts: Date.now() });
-            queued = true;
-          } catch (_err) {
-            console.error("IDB queue add failed [", collection, "]:", _err);
-          }
-          // ৩) Firestore-এ লিখি; সফল হলে pending থেকে সরাই
-          if (!window.firebaseApp) return;
-          try {
-            const docRef = window.firebaseApp.doc(window.firebaseApp.collection(window.firebaseApp.db, collection), docId);
-            const clean = JSON.parse(JSON.stringify(rec));
-            await this._withTimeout(window.firebaseApp.setDoc(docRef, clean, { merge: true }), 15000);
-            this._noteSynced(collection, rec);
-            this.syncStatus = 'synced';
-            this.syncStatusText = 'সব সেভ হয়েছে';
-            if (queued) {
-              try { await this._idbPendingRemove(pid); } catch (e2) { console.error("IDB pending remove failed:", e2); }
-            }
-          } catch (e) {
-            console.error("Firestore save [", collection, "] error:", e);
-            const mapped = this._hintForError(e && e.code);
-            this.syncStatus = 'offline';
-            this.syncStatusText = 'লোকালে সেভ হয়েছে — সিঙ্ক পরবর্তীতে';
-            // কোটা/অস্থায়ী সীমা হলে ডেটা অপেক্ষমাণ queue-এ নিরাপদে আছে — ভয়ের বার্তা নয়,
-            // শুধু জানিয়ে দিই পরবর্তীতে Cloud-এ সিঙ্ক হবে।
-            if (mapped.cat === 'quota') {
-              this.showToastMsg('সেভ হয়েছে! ক্লাউডে অটো-সিঙ্ক হবে।', 'saving', 3000);
-            } else {
-              this.showToastMsg(mapped.msg, 'error', 8000);
-            }
-            // ব্যর্থ — pending-এ থেকে যায়; auto-sync পরে মিলিয়ে দেবে
-          }
-        },
-
-        async saveRecord(collection, rec) {
-          this.isLoading = true;
-          await this.saveToFirestore(collection, rec);
-          this.isLoading = false;
-          this.showToastMsg('সেভ হয়েছে!', 'success');
-        },
-
-        async deleteFromFirestore(collection, id) {
-          if (!id) return;
-          // ১) local mirror থেকে সরাই (রিলোডের পরেও ডিলিট ভেসে না ওঠে)।
-          try {
-            await this._idbLocalDelete(collection, id);
-            this._idbUnavailable = false;
-          } catch (_err) {
-            console.error("IDB mirror delete failed [", collection, "]:", _err);
-            if (!this._idbUnavailable) {
-              this._idbUnavailable = true;
-              this.showToastMsg('অফলাইন সেভ সুবিধা পাওয়া যাচ্ছে না! ব্রাউজার সেটিংস/প্রাইভেট মোড পরীক্ষা করুন।', 'error', 6000);
-            }
-          }
-          // ২) pending-এও রাখি — ডিলিটও Cloud-এ পৌঁছাবে।
-          const pid = this._pendingId(collection, id);
-          let queued = false;
-          try {
-            await this._idbPendingAdd({ id: pid, collection, docId: id, op: 'delete', data: null, ts: Date.now() });
-            queued = true;
-          } catch (_err) {
-            console.error("IDB queue add failed [", collection, "]:", _err);
-          }
-          // ৩) Firestore-এ ডিলিট; সফল হলে pending থেকে সরাই
-          if (!window.firebaseApp) return;
-          try {
-            await this._withTimeout(window.firebaseApp.deleteDoc(window.firebaseApp.doc(window.firebaseApp.collection(window.firebaseApp.db, collection), id)), 15000);
-            this.syncStatus = 'synced';
-            this.syncStatusText = 'সব সেভ হয়েছে';
-            if (queued) {
-              try { await this._idbPendingRemove(pid); } catch (e2) { console.error("IDB pending remove failed:", e2); }
-            }
-          } catch (e) {
-            console.error("Firestore delete error:", e);
-            const mapped = this._hintForError(e && e.code);
-            this.syncStatus = 'offline';
-            this.syncStatusText = 'লোকালে সেভ হয়েছে — সিঙ্ক পরবর্তীতে';
-            if (mapped.cat === 'quota') {
-              this.showToastMsg('ডিলিট হয়েছে! ক্লাউডে অটো-সিঙ্ক হবে।', 'saving', 3000);
-            } else {
-              this.showToastMsg(mapped.msg, 'error', 8000);
-            }
-            // ব্যর্থ — pending-এ থেকে যায়
-          }
-        },
 
         // Firestore-এ লিখন চলছে কিনা স্ব-পরীক্ষা — Rules ঠিক আছে কিনা এমনিই ধরা পড়বে
 
@@ -5921,104 +5620,174 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
         // অন্য ডিভাইসে) সাথে সাথে এখানে হালনাগাদ হয়ে যায় — রিফ্রেশ বা আবার লগইন লাগে না।
         // firstLoad: প্রথম লোডে isLoading=true গ্লোবাল ওভারলে দেখাবে; পরে শুধু নিঃশব্দে
         // আপডেট হবে ব্যবহারকারী না বুঝেই।
-        async loadDataFromFirestore() {
-          if (!window.firebaseApp) return;
-          if (this._loadInFlight) return;
-          this._loadInFlight = true;
+async loadDataFromFirestore() {
+           if (!window.firebaseApp) return;
+           if (this._loadInFlight) return;
+           this._loadInFlight = true;
 
-          const collections = ['clients', 'ledger_entries', 'payments', 'rates', 'monthly_bill_snapshots', 'expenses', 'users', 'stores', 'challan_records', 'settings'];
+           // ====== PAGINATION CONFIG ======
+           // বড় collections-এ শুধু শেষ ৯০ দিনের ডেটা real-time subscribe করি।
+           // date field 'YYYY-MM-DD' format-এ থাকা চাই।
+           const cutoffDate90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+             .toISOString().slice(0, 10);
+           // ছোট/স্থিতিশীল collections — সম্পূর্ণ লোড
+           const fullCollections = ['clients', 'rates', 'monthly_bill_snapshots', 'users', 'stores', 'settings'];
+           // বড় collections — date-filtered (শুধু শেষ ৯০ দিন)
+           const pagedCollections = {
+             ledger_entries: { dateField: 'date', cutoff: cutoffDate90 },
+             payments:       { dateField: 'date', cutoff: cutoffDate90 },
+             expenses:       { dateField: 'date', cutoff: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10) },
+             challan_records:{ dateField: 'date', cutoff: cutoffDate90 },
+           };
 
-          // আগের সাবস্ক্রিপশন বন্ধ করে নতুন বসাই (রিলগইন/পুনরায় লোড হলে ডুপ্লিকেট এড়াতে)।
-          this._unsubscribeAll();
+           // আগের সাবস্ক্রিপশন বন্ধ করে নতুন বসাই।
+           this._unsubscribeAll();
+           // পুরনো paginated ডেটা ধরে রাখার store (merge-এর জন্য)
+           if (!this._archivedData) this._archivedData = {};
 
-          // লোকাল mirror (IndexedDB) থেকে স্টেট আগে বসাই — রিফ্রেশ/অফলাইন/সার্ভার ফাঁকা
-          // হলেও নিজের করা ডেটা সাথে সাথে UI-তে দেখাবে। Firestore snapshot পরে মিলিয়ে নেয়।
-          try { await this._loadLocalMirror(); } catch (e) { console.error("local mirror load error:", e); }
+           const applyCollection = async (col, docs) => {
+             const fieldMap = { ledger_entries: 'ledgerEntries', monthly_bill_snapshots: 'snapshots', challan_records: 'challanRecords' };
+             const field = fieldMap[col] || col;
 
-          const applyCollection = async (col, docs) => {
-            const data = docs.map(d => ({ ...d.data(), id: d.id }));
-            // pending (অসিঙ্কিত) লেখা/ডিলিট সার্ভার ডেটার উপর আরোপ করি — যেন ইউজার
-            // নিজের করা কিন্তু এখনও Cloud-এ না-পৌঁছানো পরিবর্তন অদৃশ্য না হয়।
-            const merged = await this._mergePending(col, data);
-            const fieldMap = { ledger_entries: 'ledgerEntries', monthly_bill_snapshots: 'snapshots', challan_records: 'challanRecords' };
-            const field = fieldMap[col] || col;
-            if (col === 'settings') {
-              const serverData = merged[0] || {};
-              // Print/Bill ডিজাইন নিয়ন্ত্রণ (layout/printConfig) Firestore-এ যায় না —
-              // সবসময় local-এ থাকে। সার্ভারের settings থেকে সেগুলো বাদ দিই।
-              ['billLayout','masterLayout','masterSummaryLayout','printConfig'].forEach(k => delete serverData[k]);
-              this.settings = { ...this.settings, ...serverData };
-              // layout ফিল্ড local-থেকে ইতিমধ্যে init হয়ে আছে (initApp-এ) — কোনো কারণে
-              // মিসিং হলেই শুধু আবার init করি (saveSettings লুপ এড়াতে)।
-              if (!this.settings.billLayout) this.initBillLayout();
-              if (!this.settings.masterLayout) this.initMasterLayout();
-              if (!this.settings.masterSummaryLayout) this.initMasterSummaryLayout();
-              this.ensurePrintConfig();
-              // সার্ভার settings (layout ছাড়া, থাকলে) local mirror-এও রাখি।
-              if (merged[0]) this._idbLocalReplaceCollection('settings', [serverData]).catch(e => console.error("IDB mirror settings error:", e));
-            } else {
-              this[field] = merged;
-              // সার্ভার-সংশোধিত (সর্বশেষ) দৃশ্যটি local mirror-এ রেখে দিই — রিলোড/অফলাইনে
-              // সেই ডেটাই UI-তে বেস হিসেবে বসবে।
-              this._idbLocalReplaceCollection(col, merged).catch(e => console.error("IDB mirror replace [", col, "] error:", e));
-            }
-            this._noteSyncedForCollection(col, merged);
-          };
+             if (col === 'settings') {
+               const serverData = (docs[0] ? { ...docs[0].data(), id: docs[0].id } : {});
+               ['billLayout','masterLayout','masterSummaryLayout','printConfig'].forEach(k => delete serverData[k]);
+               this.settings = { ...this.settings, ...serverData };
+               if (!this.settings.billLayout) this.initBillLayout();
+               if (!this.settings.masterLayout) this.initMasterLayout();
+               if (!this.settings.masterSummaryLayout) this.initMasterSummaryLayout();
+               this.ensurePrintConfig();
+               return;
+             }
 
-          try {
-            // কালেকশনগুলো আলাদা আলাদা listener দিয়ে চালু করি।
-            const firstSnapPromises = [];
-            collections.forEach(col => {
-              const q = window.firebaseApp.collection(window.firebaseApp.db, col);
-              let resolved = false;
-              const p = new Promise(res => {
-                let unsub = null;
-                try {
-                  unsub = window.firebaseApp.onSnapshot(q,
-                    (snap) => {
-                      if (!this._dataLoaded) {
-                        // প্রথম snapshot-এর জন্য resolve (প্রাথমিক লোড শেষ হয়)
-                        if (!resolved) { resolved = true; res(snap); }
-                      }
-                      this._applySnapshot(col, snap, applyCollection);
-                    },
-                    (err) => {
-                      console.error("Firestore snapshot [", col, "] error:", err);
-                      if (!resolved) { resolved = true; res(null); }
-                    }
-                  );
-                } catch (err) {
-                  console.error("Firestore snapshot setup [", col, "] error:", err);
-                  if (!resolved) { resolved = true; res(null); }
-                }
-                if (unsub) this._rtListeners.push(unsub);
-              });
-              firstSnapPromises.push(p);
-            });
+             const freshData = docs.map(d => ({ ...d.data(), id: d.id }));
 
-            // প্রতিটা কালেকশনের প্রথম snapshot (বা ত্রুটি) পর্যন্ত অপেক্ষা করি —
-            // যাতে লগইনের পর লোডিং ওভারলে শেষ করার আগেই সব ডেটা চলে আসে।
-            await this._withTimeout(Promise.all(firstSnapPromises), 25000);
+             if (pagedCollections[col]) {
+               // Paginated collection: recent data + archived (পুরনো) data merge করি
+               const archived = this._archivedData[field] || [];
+               // archived থেকে duplicate বাদ দাও (fresh-এ যা আছে তা বাদ)
+               const freshIds = new Set(freshData.map(r => r.id));
+               const mergedArchived = archived.filter(r => !freshIds.has(r.id));
+               this[field] = [...freshData, ...mergedArchived];
+             } else {
+               this[field] = freshData;
+             }
+           };
 
-            // এখন পর্যন্ত যা Firestore-এ আছে তা "সিঙ্কড" চিহ্নিত করি — যেন এই লগইনে
-            // কিছুই অযথা আবার লেখা না হয়। recalculateAllClients() তারপর শুধু সেসব রেকর্ড
-            // আপডেট করবে যার হিসাব আগের থেকে আলাদা।
-            this._initSyncedHashes();
-            this.recalculateAllClients();
-            this.initBulkRows();
-            this.initPaymentRows();
-            if (this.clients.length > 0 && !this.selectedClientId) {
-              this.selectedClientId = this.clients[0].id;
-            }
-          } catch (e) {
-            console.error("Firestore realtime load error:", e);
-            const mapped = this._hintForError(e && e.code);
-            this.showToastMsg(mapped.msg, 'error', 10000);
-          } finally {
-            this._loadInFlight = false;
-            this._dataLoaded = true;
-          }
-        },
+           try {
+             const firstSnapPromises = [];
+
+             // ছোট collections — সম্পূর্ণ real-time subscribe
+             fullCollections.forEach(col => {
+               const colRef = window.firebaseApp.collection(window.firebaseApp.db, col);
+               let resolved = false;
+               const p = new Promise(res => {
+                 let unsub = null;
+                 try {
+                   unsub = window.firebaseApp.onSnapshot(colRef,
+                     snap => {
+                       if (!resolved) { resolved = true; res(snap); }
+                       this._applySnapshot(col, snap, applyCollection);
+                     },
+                     err => {
+                       console.error("Firestore snapshot [", col, "] error:", err);
+                       if (!resolved) { resolved = true; res(null); }
+                     }
+                   );
+                 } catch (err) {
+                   console.error("Firestore snapshot setup [", col, "] error:", err);
+                   if (!resolved) { resolved = true; res(null); }
+                 }
+                 if (unsub) this._rtListeners.push(unsub);
+               });
+               firstSnapPromises.push(p);
+             });
+
+             // বড় collections — date-filtered real-time subscribe (শুধু শেষ ৯০/৩০ দিন)
+             Object.entries(pagedCollections).forEach(([col, cfg]) => {
+               const { dateField, cutoff } = cfg;
+               let q;
+               try {
+                 q = window.firebaseApp.query(
+                   window.firebaseApp.collection(window.firebaseApp.db, col),
+                   window.firebaseApp.where(dateField, '>=', cutoff),
+                   window.firebaseApp.orderBy(dateField, 'desc')
+                 );
+               } catch(e) {
+                 // query/where/orderBy না থাকলে fallback: সম্পূর্ণ collection
+                 q = window.firebaseApp.collection(window.firebaseApp.db, col);
+               }
+               let resolved = false;
+               const p = new Promise(res => {
+                 let unsub = null;
+                 try {
+                   unsub = window.firebaseApp.onSnapshot(q,
+                     snap => {
+                       if (!resolved) { resolved = true; res(snap); }
+                       this._applySnapshot(col, snap, applyCollection);
+                     },
+                     err => {
+                       console.error("Firestore paged snapshot [", col, "] error:", err);
+                       if (!resolved) { resolved = true; res(null); }
+                     }
+                   );
+                 } catch (err) {
+                   console.error("Firestore paged snapshot setup [", col, "] error:", err);
+                   if (!resolved) { resolved = true; res(null); }
+                 }
+                 if (unsub) this._rtListeners.push(unsub);
+               });
+               firstSnapPromises.push(p);
+             });
+
+             // সব প্রথম snapshot আসা পর্যন্ত অপেক্ষা করি (timeout: ২৫ সেকেন্ড)
+             await this._withTimeout(Promise.all(firstSnapPromises), 25000);
+
+             this.recalculateAllClients();
+             this.initBulkRows();
+             this.initPaymentRows();
+             if (this.clients.length > 0 && !this.selectedClientId) {
+               this.selectedClientId = this.clients[0].id;
+             }
+           } catch (e) {
+             console.error("Firestore realtime load error:", e);
+             const mapped = this._hintForError(e && e.code);
+             this.showToastMsg(mapped.msg, 'error', 10000);
+           } finally {
+             this._loadInFlight = false;
+             this._dataLoaded = true;
+           }
+         },
+
+         // পুরনো ডেটা on-demand fetch — যেমন পুরনো মাসের ledger/payment দরকার হলে
+         // month: "2025-03" format
+         async fetchOlderData(col, month) {
+           if (!window.firebaseApp) return;
+           const fieldMap = { ledger_entries: 'ledgerEntries', monthly_bill_snapshots: 'snapshots', challan_records: 'challanRecords' };
+           const field = fieldMap[col] || col;
+           const startDate = month + '-01';
+           const endDate = month + '-31';
+           try {
+             const q = window.firebaseApp.query(
+               window.firebaseApp.collection(window.firebaseApp.db, col),
+               window.firebaseApp.where('date', '>=', startDate),
+               window.firebaseApp.where('date', '<=', endDate)
+             );
+             const snap = await window.firebaseApp.getDocs(q);
+             const fetched = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+             if (!this._archivedData) this._archivedData = {};
+             const existing = this._archivedData[field] || [];
+             const existingIds = new Set(existing.map(r => r.id));
+             const newOnes = fetched.filter(r => !existingIds.has(r.id));
+             this._archivedData[field] = [...existing, ...newOnes];
+             // live state-এও merge করি
+             const currentIds = new Set((this[field] || []).map(r => r.id));
+             const toAdd = fetched.filter(r => !currentIds.has(r.id));
+             if (toAdd.length > 0) this[field] = [...(this[field] || []), ...toAdd];
+           } catch (e) {
+             console.error("fetchOlderData error [", col, "]:", e);
+           }
+         },
 
         // এক কালেকশনের snapshot-কে স্টেটে প্রয়োগ করে। রিয়েল-টাইম আপডেটে ডেরাইভড
         // (হিসাব-হীন) ফিল্ডগুলো লোকালে আবার হিসাব করার দরকার হয় না — শুধু কাঁচা ডেটা বদলাই।
@@ -6026,70 +5795,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           Promise.resolve(applyCollection(col, snap.docs)).catch(err => console.error("apply snapshot error [", col, "]:", err));
         },
 
-        // সার্ভার-আপডেটেড ডেটার উপর pending (অসিঙ্কিত) অপারেশন আরোপ করি।
-        // 'put' → ঐ docId-র ডেটা স্থানীয় সংস্করণ দিয়ে বদল; 'delete' → রেকর্ড বাদ।
-        async _mergePending(collection, serverArr) {
-          try {
-            const pending = await this._idbPendingGetAll();
-            const mine = pending.filter(p => p.collection === collection);
-            if (!mine.length) return serverArr;
-            const byId = new Map((serverArr || []).map(r => [r.id, r]));
-            mine.forEach(p => {
-              if (p.op === 'put' && p.data) {
-                const rec = JSON.parse(JSON.stringify(p.data));
-                byId.set(p.docId, rec);
-              } else if (p.op === 'delete') {
-                byId.delete(p.docId);
-              }
-            });
-            return Array.from(byId.values());
-          } catch (e) {
-            console.error("IDB merge error:", e);
-            return serverArr || [];
-          }
-        },
-
-        // লোকাল mirror (IndexedDB 'data') থেকে পুরো স্টেট তৈরি করি — রিলোড/অফলাইন/সার্ভার
-        // অগম্য হলেও আগের সব দেখা ডেটা UI-তে ফিরে আসে। তারপর Firestore snapshot এসে
-        // সার্ভার-সংশোধিত মান দিয়ে মিলিয়ে নেয় (pending-এর অধিকার সবসময় স্থানীয় লেখার)।
-        async _loadLocalMirror() {
-          const fieldMap = { ledger_entries: 'ledgerEntries', monthly_bill_snapshots: 'snapshots', challan_records: 'challanRecords' };
-          try {
-            const map = await this._idbLocalGetAllCollections();
-            Object.keys(fieldMap).forEach(col => {
-              const field = fieldMap[col];
-              if (map[col]) this[field] = map[col];
-            });
-            ['clients', 'payments', 'rates', 'expenses', 'users', 'stores'].forEach(col => {
-              if (map[col]) this[col] = map[col];
-            });
-            if (map['settings'] && map['settings'][0]) {
-              const s = { ...map['settings'][0] };
-              ['billLayout','masterLayout','masterSummaryLayout','printConfig'].forEach(k => delete s[k]);
-              this.settings = { ...this.settings, ...s };
-              if (!this.settings.billLayout) this.initBillLayout();
-              if (!this.settings.masterLayout) this.initMasterLayout();
-              if (!this.settings.masterSummaryLayout) this.initMasterSummaryLayout();
-              this.ensurePrintConfig();
-            }
-          } catch (e) {
-            console.error("IDB local mirror load error:", e);
-          }
-        },
-
-        // প্রতিটা কালেকশনের রেকর্ডগুলো সিঙ্কড চিহ্নিত করি (রিয়েল-টাইম আপডেটের পরেও
-        // অপ্রয়োজনীয় লেখা এড়াতে) — তবে শুধু প্রথম লোডের পরে, কারণ পরে আসা
-        // snapshot-এর হ্যাশ আর মিলবে না।
-        _noteSyncedForCollection(col, data) {
-          if (!this._dataLoaded) return;
-          this._syncedHashes = this._syncedHashes || {};
-          this._syncedHashes[col] = this._syncedHashes[col] || {};
-          (data || []).forEach(rec => {
-            if (rec && rec.id != null) this._syncedHashes[col][rec.id] = this._hashOf(rec);
-          });
-        },
-
-        _unsubscribeAll() {
+_unsubscribeAll() {
           (this._rtListeners || []).forEach(u => { try { u(); } catch (e) {} });
           this._rtListeners = [];
         },
@@ -6112,7 +5818,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
               existing.id = fbUser.uid;
               if (!existing.email) existing.email = fbUser.email;
               existing.updatedAt = Date.now();
-              await this.saveToFirestore('users', existing);
+              this.saveToFirestore('users', existing);
             }
             if (this.currentUserId !== fbUser.uid) this.currentUserId = fbUser.uid;
             return;
@@ -6131,7 +5837,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           };
           this.users.unshift(newUser);
           this.currentUserId = fbUser.uid;
-          await this.saveToFirestore('users', newUser);
+          this.saveToFirestore('users', newUser);
         },
 
 
@@ -6140,33 +5846,22 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           document.documentElement.classList.toggle('dark', this.darkMode);
         },
 
-        toggleDarkMode() {
-          this.darkMode = !this.darkMode;
-          this.applyTheme();
-          try { localStorage.setItem('mrt_darkmode', this.darkMode ? '1' : '0'); } catch (e) {}
-        },
+toggleDarkMode() {
+           this.darkMode = !this.darkMode;
+           this.applyTheme();
+         },
 
-        initTheme() {
-          try {
-            const saved = localStorage.getItem('mrt_darkmode');
-            if (saved === '1') this.darkMode = true;
-            else if (saved === '0') this.darkMode = false;
-          } catch (e) {}
-          this.applyTheme();
-        },
+         initTheme() {
+           this.applyTheme();
+         },
 
         // ===== SIDEBAR COLLAPSE =====
-        toggleSidebar() {
-          this.sidebarCollapsed = !this.sidebarCollapsed;
-          try { localStorage.setItem('mrt_sidebar', this.sidebarCollapsed ? '1' : '0'); } catch (e) {}
-        },
+toggleSidebar() {
+           this.sidebarCollapsed = !this.sidebarCollapsed;
+         },
 
-        initSidebar() {
-          try {
-            const saved = localStorage.getItem('mrt_sidebar');
-            if (saved === '1') this.sidebarCollapsed = true;
-          } catch (e) {}
-        },
+         initSidebar() {
+         },
 
         // ===== USER MANAGEMENT (admin only) =====
         openUserModal(user = null) {
@@ -6216,7 +5911,6 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           if (!this.editingUser && !this.userForm.password) { alert('নতুন ইউজারের জন্য পাসওয়ার্ড দিন'); return; }
           if (this.userForm.role === 'manager' && this.userForm.permissions.length === 0) { alert('ম্যানেজারের জন্য অন্তত একটি অনুমতি নির্বাচন করুন'); return; }
 
-          this.isLoading = true;
           try {
             if (this.editingUser) {
               const u = this.editingUser;
@@ -6229,7 +5923,7 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
               if (this.userForm.password) {
                 u.pendingPassword = this.userForm.password;
               }
-              await this.saveToFirestore('users', u);
+              this.saveToFirestore('users', u);
             } else {
               const uid = await this.createUserWithFirebase();
               if (!uid) { this.showToastMsg('ইউজার তৈরি ব্যর্থ হয়েছে!', 'error'); return; }
@@ -6244,15 +5938,13 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
                 updatedAt: Date.now(),
                 status: 'active'
               };
-              await this.saveToFirestore('users', newUser);
+              this.saveToFirestore('users', newUser);
               this.users.push(newUser);
             }
             this.showUserModal = false;
             this.showToastMsg('ইউজার সফলভাবে সেভ হয়েছে!', 'success');
           } catch (e) {
             this.showToastMsg('ইউজার সেভ ব্যর্থ হয়েছে!', 'error');
-          } finally {
-            this.isLoading = false;
           }
         },
 
@@ -6262,10 +5954,10 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           const otherAdmins = this.users.filter(u => u.role === 'admin' && u.id !== user.id);
           if (user.role === 'admin' && otherAdmins.length === 0) { alert('শেষ অ্যাডমিনকে ডিলিট করা যাবে না'); return; }
           if (confirm('ইউজার "' + user.username + '" কে মুছে ফেলবেন?')) {
-            this.isLoading = true;
-            await this.deleteFromFirestore('users', user.id);
+            this.deleteFromFirestore('users', user.id);
+
             this.users = this.users.filter(u => u.id !== user.id);
-            this.isLoading = false;
+
             this.showToastMsg('ইউজার মুছে ফেলা হয়েছে!', 'success');
           }
         },
@@ -6336,12 +6028,11 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
             };
             this.stores.push(newStore);
             if (!this.settings.defaultStoreId) this.settings.defaultStoreId = newStore.id;
-            this.saveToFirestore('stores', newStore);
-          }
-          this.saveLocalData();
-          this.showStoreModal = false;
-          this.recalculateAllClients();
-          alert('স্টোর সফলভাবে সেভ হয়েছে!');
+this.saveToFirestore('stores', newStore);
+           }
+           this.showStoreModal = false;
+           this.recalculateAllClients();
+           alert('স্টোর সফলভাবে সেভ হয়েছে!');
         },
 
         deleteStore(store) {
@@ -6354,12 +6045,11 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
           });
           const hasRef = this.ledgerEntries.some(e => e.stockIn?.storeId === store.id || e.delivery?.storeId === store.id);
           if (hasStock) { alert('এই স্টোরে বর্তমানে মাল মজুদ আছে — আগে মাল সরান, তারপর ডিলিট করুন'); return; }
-          if (confirm('স্টোর "' + store.name + '" মুছে ফেলবেন?' + (hasRef ? '\n(পুরনো এন্ট্রিগুলো "প্রধান গুদাম" হিসেবে গণনা হবে)' : ''))) {
-            this.deleteFromFirestore('stores', store.id);
-            this.stores = this.stores.filter(s => s.id !== store.id);
-            this.recalculateAllClients();
-            this.saveLocalData();
-          }
+if (confirm('স্টোর "' + store.name + '" মুছে ফেলবেন?' + (hasRef ? '\n(পুরনো এন্ট্রিগুলো "প্রধান গুদাম" হিসেবে গণনা হবে)' : ''))) {
+             this.deleteFromFirestore('stores', store.id);
+             this.stores = this.stores.filter(s => s.id !== store.id);
+             this.recalculateAllClients();
+           }
         },
 
         // Aggregate current stock per store across all clients.
@@ -6712,10 +6402,9 @@ boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'cen
               client.runningBalance = curBill.closingBalance;
             }
           } catch (e) { /* recalc ঢুকলে bill fail হলে stored value রাখা */ }
-          client.storeStock = storeStock;
-          this.clearMemo();
-          this.saveLocalData();
-        },
+client.storeStock = storeStock;
+           this.clearMemo();
+         },
 
         recalculateAllClients() {
           this.clients.forEach(c => this.recalculateClientLedger(c.id));
@@ -9175,11 +8864,10 @@ challanDownloadImage() {
             effectiveTo: this.rateForm.effectiveTo || null,
             createdAt: new Date().toISOString()
           };
-          this.rates.push(newRate);
-          this.rates.sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
-          this.recalculateAllClients();
-          this.saveLocalData();
-          this.saveToFirestore('rates', newRate);
+this.rates.push(newRate);
+           this.rates.sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
+           this.recalculateAllClients();
+           this.saveToFirestore('rates', newRate);
           this.rateForm.rate = 0.13;
           this.rateForm.displayRate = null;
           this.rateForm.effectiveTo = null;
@@ -9213,11 +8901,10 @@ challanDownloadImage() {
             effectiveTo: this.rateForm.effectiveTo || null,
             createdAt: new Date().toISOString()
           };
-          this.rates.push(newRate);
-          this.rates.sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
-          this.recalculateClientLedger(client.id);
-          this.saveLocalData();
-          this.saveToFirestore('rates', newRate);
+this.rates.push(newRate);
+           this.rates.sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
+           this.recalculateClientLedger(client.id);
+           this.saveToFirestore('rates', newRate);
           this.rateForm.rate = 0.13;
           this.rateForm.displayRate = null;
           this.rateForm.effectiveTo = null;
@@ -9228,11 +8915,10 @@ challanDownloadImage() {
           if (!this.requirePerm('settings')) return;
           if (confirm('এই দরের রেকর্ডটি মুছে ফেলবেন?')) {
             const rate = this.rates.find(r => r.id === id);
-            this.rates = this.rates.filter(r => r.id !== id);
-            this.deleteFromFirestore('rates', rate.id);
-            this.recalculateAllClients();
-            this.saveLocalData();
-          }
+this.rates = this.rates.filter(r => r.id !== id);
+             this.deleteFromFirestore('rates', rate.id);
+             this.recalculateAllClients();
+           }
         },
 
         // Helper calculations
@@ -10002,12 +9688,10 @@ challanDownloadImage() {
 
         // Monthly Bill Google Sheets-like Direct Editor — freeform with box resizing
         initBillLayout() {
-          const d = { headerWidth: 17, clientGap: 40, colWidths: [12, 5, 6, 5, 6, 5, 6, 11, 14, 11, 19], colAligns: ['center','center','center','center','center','center','center','center','center','center','center'], headerAlign: 'center', summaryAlign: 'right', borderColor: '#000000', borderWeight: 0.9, headerTop: 3.5, clientScale: 100, headerClientGap: 5, tableGap: 5, summaryGap: 5, boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'center', summary:'center', clientId:'center'}, columnOrder: [0,1,2,3,4,5,6,7,8,9,10], boxBorders: {header:{top:true,right:true,bottom:true,left:true}, clientLeft:{top:true,right:true,bottom:true,left:true}, clientRight:{top:true,right:true,bottom:true,left:true}, table:{top:true,right:true,bottom:true,left:true}, summary:{top:true,right:true,bottom:true,left:true}, clientId:{top:true,right:true,bottom:true,left:true}}, boxSizes: {header:{w:100,h:0,zoom:1,thick:false}, clientLeft:{w:50,h:0,zoom:1,thick:false}, clientRight:{w:50,h:0,zoom:1,thick:false}, table:{w:100,h:0,zoom:1,thick:false}, summary:{w:62.5,h:0,zoom:1,thick:false}, clientId:{w:40,h:0,zoom:1,thick:false}}, boxPositions: {header:{x:0,y:0}, clientLeft:{x:0,y:0}, clientRight:{x:0,y:0}, table:{x:0,y:0}, summary:{x:0,y:0}}, billScale: 100, billWidth: 100, billFontSize: 8.5, numberLang: 'en', cellBorders: {}, cellAligns: {}, cellValigns: {}, cellRowspans: {}, textDesign: {headerTitle:{size:'20px', weight:900, color:'#000000'}} };
-          if (!this.settings.billLayout) {
-            var _saved = null;
-            try { var _raw = localStorage.getItem('mrt_billLayout'); if (_raw) _saved = JSON.parse(_raw); } catch(e) {}
-            this.settings.billLayout = _saved || JSON.parse(JSON.stringify(d));
-          }
+const d = { headerWidth: 17, clientGap: 40, colWidths: [12, 5, 6, 5, 6, 5, 6, 11, 14, 11, 19], colAligns: ['center','center','center','center','center','center','center','center','center','center','center'], headerAlign: 'center', summaryAlign: 'right', borderColor: '#000000', borderWeight: 0.9, headerTop: 3.5, clientScale: 100, headerClientGap: 5, tableGap: 5, summaryGap: 5, boxAligns: {header:'center', clientLeft:'left', clientRight:'center', table:'center', summary:'center', clientId:'center'}, columnOrder: [0,1,2,3,4,5,6,7,8,9,10], boxBorders: {header:{top:true,right:true,bottom:true,left:true}, clientLeft:{top:true,right:true,bottom:true,left:true}, clientRight:{top:true,right:true,bottom:true,left:true}, table:{top:true,right:true,bottom:true,left:true}, summary:{top:true,right:true,bottom:true,left:true}, clientId:{top:true,right:true,bottom:true,left:true}}, boxSizes: {header:{w:100,h:0,zoom:1,thick:false}, clientLeft:{w:50,h:0,zoom:1,thick:false}, clientRight:{w:50,h:0,zoom:1,thick:false}, table:{w:100,h:0,zoom:1,thick:false}, summary:{w:62.5,h:0,zoom:1,thick:false}, clientId:{w:40,h:0,zoom:1,thick:false}}, boxPositions: {header:{x:0,y:0}, clientLeft:{x:0,y:0}, clientRight:{x:0,y:0}, table:{x:0,y:0}, summary:{x:0,y:0}}, billScale: 100, billWidth: 100, billFontSize: 8.5, numberLang: 'en', cellBorders: {}, cellAligns: {}, cellValigns: {}, cellRowspans: {}, textDesign: {headerTitle:{size:'20px', weight:900, color:'#000000'}} };
+           if (!this.settings.billLayout) {
+             this.settings.billLayout = JSON.parse(JSON.stringify(d));
+           }
           else {
             if (!this.settings.billLayout.colWidths || this.settings.billLayout.colWidths.length !== 11) this.settings.billLayout.colWidths = d.colWidths.slice();
             if (!this.settings.billLayout.colAligns || this.settings.billLayout.colAligns.length !== 11) this.settings.billLayout.colAligns = d.colAligns.slice();
@@ -10038,10 +9722,9 @@ challanDownloadImage() {
           }
         },
 saveBillLayout() {
-           if (this.settings.billLayout) {
-             this.settings.updatedAt = Date.now();
-             try { localStorage.setItem('mrt_billLayout', JSON.stringify(this.settings.billLayout)); } catch(e) {}
-           }
+            if (this.settings.billLayout) {
+              this.settings.updatedAt = Date.now();
+            }
            if (this._billSaveTimer) clearTimeout(this._billSaveTimer);
            this._billSaveTimer = setTimeout(() => this.saveSettings && this.saveSettings(), 300);
          },
@@ -10050,19 +9733,16 @@ saveBillLayout() {
           this.saveBillLayout();
         },
 saveMasterLayout() {
-           if (this.settings.masterLayout) {
-             this.settings.updatedAt = Date.now();
-             try { localStorage.setItem('mrt_masterLayout', JSON.stringify(this.settings.masterLayout)); } catch(e) {}
-           }
+            if (this.settings.masterLayout) {
+              this.settings.updatedAt = Date.now();
+            }
            if (this._masterSaveTimer) clearTimeout(this._masterSaveTimer);
            this._masterSaveTimer = setTimeout(() => this.saveSettings && this.saveSettings(), 300);
          },
-        initMasterLayout() {
-          let saved = null;
-          try { const s = localStorage.getItem('mrt_masterLayout'); if (s) saved = JSON.parse(s); } catch(e) {}
-          const defaults = { cellAligns: {}, cellValigns: {} };
-          if (!this.settings.masterLayout) this.settings.masterLayout = {};
-          Object.assign(this.settings.masterLayout, defaults, saved || {});
+initMasterLayout() {
+           const defaults = { cellAligns: {}, cellValigns: {} };
+           if (!this.settings.masterLayout) this.settings.masterLayout = {};
+           Object.assign(this.settings.masterLayout, defaults);
         },
         getMasterCellStyle(cellId) {
           if (!this.settings.masterLayout) return '';
@@ -10101,43 +9781,36 @@ saveMasterLayout() {
         },
         // ===== MASTER SUMMARY LAYOUT — Horizontal Align Edit (monthly bill মতো হুবহু) =====
         initMasterSummaryLayout() {
-          const d = {
-            borderColor: '#000000',
-            borderWeight: 1.5,
-            fontSize: 12,
-            headerTitleSize: '24px',
-            colWidths: [4,5,18,17,11,6,6,8,8,7,6,8,10],
-             colAligns: ['center','center','center','center','center','center','center','center','center','center','center','center','center'],
-            headerGap: 12,
-            summaryGap: 12,
-            tableGap: 12,
-            boxSizes: {header:{w:100,h:0,zoom:1,thick:false}, summary:{w:100,h:0,zoom:1,thick:false}, table:{w:100,h:0,zoom:1,thick:false}},
-            boxBorders: {header:{top:true,right:true,bottom:true,left:true}, summary:{top:true,right:true,bottom:true,left:true}, table:{top:true,right:true,bottom:true,left:true}},
-            boxAligns: {header:'center', summary:'center', table:'center'},
-            cellBorders: {},
-            cellAligns: {},
-            cellValigns: {},
-            cellRowspans: {},
-            summaryAlign: 'center',
-            highlightZeroStock: true,
-            numberLang: 'en',
-            nameHeaderBg: '#dcdcdc',
-            nameHeaderColor: '#000000',
-            nameHeaderFontSize: 12.5,
-            nameHeaderWeight: 700,
-            nameBodyFontSize: 12,
-            nameBodyWeight: 500,
-            nameBodyColor: '#000000'
-          };
-          let saved = null;
-          try { const _raw = localStorage.getItem('mrt_masterSummaryLayout'); if (_raw) saved = JSON.parse(_raw); } catch(e) {}
-          // পুরানো masterLayout থেকে cellAligns মাইগ্রেট (backward compat)
-          let legacy = null;
-          try { const _l = localStorage.getItem('mrt_masterLayout'); if (_l) legacy = JSON.parse(_l); } catch(e) {}
-          if (!this.settings.masterSummaryLayout) {
-            this.settings.masterSummaryLayout = saved ? JSON.parse(JSON.stringify(saved)) : JSON.parse(JSON.stringify(d));
-            if (legacy && legacy.cellAligns && !this.settings.masterSummaryLayout.cellAligns) this.settings.masterSummaryLayout.cellAligns = legacy.cellAligns;
-            if (legacy && legacy.cellValigns && !this.settings.masterSummaryLayout.cellValigns) this.settings.masterSummaryLayout.cellValigns = legacy.cellValigns;
+const d = {
+             borderColor: '#000000',
+             borderWeight: 1.5,
+             fontSize: 12,
+             headerTitleSize: '24px',
+             colWidths: [4,5,18,17,11,6,6,8,8,7,6,8,10],
+              colAligns: ['center','center','center','center','center','center','center','center','center','center','center','center','center'],
+             headerGap: 12,
+             summaryGap: 12,
+             tableGap: 12,
+             boxSizes: {header:{w:100,h:0,zoom:1,thick:false}, summary:{w:100,h:0,zoom:1,thick:false}, table:{w:100,h:0,zoom:1,thick:false}},
+             boxBorders: {header:{top:true,right:true,bottom:true,left:true}, summary:{top:true,right:true,bottom:true,left:true}, table:{top:true,right:true,bottom:true,left:true}},
+             boxAligns: {header:'center', summary:'center', table:'center'},
+             cellBorders: {},
+             cellAligns: {},
+             cellValigns: {},
+             cellRowspans: {},
+             summaryAlign: 'center',
+             highlightZeroStock: true,
+             numberLang: 'en',
+             nameHeaderBg: '#dcdcdc',
+             nameHeaderColor: '#000000',
+             nameHeaderFontSize: 12.5,
+             nameHeaderWeight: 700,
+             nameBodyFontSize: 12,
+             nameBodyWeight: 500,
+             nameBodyColor: '#000000'
+           };
+           if (!this.settings.masterSummaryLayout) {
+             this.settings.masterSummaryLayout = JSON.parse(JSON.stringify(d));
           } else {
             if (this.settings.masterSummaryLayout.borderColor == null) this.settings.masterSummaryLayout.borderColor = d.borderColor;
             if (this.settings.masterSummaryLayout.borderWeight == null) this.settings.masterSummaryLayout.borderWeight = d.borderWeight;
@@ -10193,10 +9866,9 @@ saveMasterLayout() {
           this.saveMasterSummaryLayout();
         },
 saveMasterSummaryLayout() {
-           if (this.settings.masterSummaryLayout) {
-             this.settings.updatedAt = Date.now();
-             try { localStorage.setItem('mrt_masterSummaryLayout', JSON.stringify(this.settings.masterSummaryLayout)); } catch(e) {}
-           }
+            if (this.settings.masterSummaryLayout) {
+              this.settings.updatedAt = Date.now();
+            }
            if (this._masterSummarySaveTimer) clearTimeout(this._masterSummarySaveTimer);
            this._masterSummarySaveTimer = setTimeout(() => this.saveSettings && this.saveSettings(), 300);
          },
@@ -10942,7 +10614,6 @@ saveMasterSummaryLayout() {
           if (this.isSaving) return;
           this.isSaving = true;
           this.savingText = text;
-          this.isLoading = true;
           this.showToastMsg(text, 'saving', 0);
           try {
             await fn();
@@ -10952,34 +10623,10 @@ saveMasterSummaryLayout() {
           } finally {
             this.isSaving = false;
             this.savingText = '';
-            this.isLoading = false;
           }
         },
 
-        // Firestore persistence: every data change is pushed to Firestore.
-        saveLocalData() {
-          if (this.suppressSync) return;
-          const enq = (collection, arr) => {
-            (arr || []).forEach(rec => {
-              if (!rec) return;
-              // Quota সাশ্রয়: যে রেকর্ড Firestore-এ আগের মতোই আছে তা আবার লেখা হয় না।
-              if (this._isSynced(collection, rec)) return;
-              this.saveToFirestore(collection, rec);
-            });
-          };
-          enq('clients', this.clients);
-          enq('ledger_entries', this.ledgerEntries);
-          enq('payments', this.payments);
-          enq('rates', this.rates);
-          enq('monthly_bill_snapshots', this.snapshots);
-          enq('expenses', this.expenses);
-          enq('users', this.users);
-            enq('stores', this.stores);
-            enq('challan_records', this.challanRecords);
-          if (!this._isSynced('settings', this.settings)) this.saveToFirestore('settings', this._settingsForFirestore());
-        },
-
-        exportJSONBackup() {
+exportJSONBackup() {
           const data = {
             settings: this.settings,
             clients: this.clients,
@@ -11013,38 +10660,6 @@ saveMasterSummaryLayout() {
           a.download = 'Master_Ledger_Summary.csv';
           a.click();
         },
-
-        // (CLOUD SYNC REMOVED)
-
-        findLocalRecord(collection, localId) {
-          if (collection === 'settings') return this.settings;
-          const arr = this[this.collectionField(collection)] || [];
-          return arr.find(r => r.id === localId) || null;
-        },
-
-        // (CLOUD SYNC REMOVED - app now runs in offline/local mode only)
-
-        // (CLOUD SYNC REMOVED)
-
-        // (CLOUD SYNC REMOVED)
-
-        // (CLOUD SYNC REMOVED)
-
-        // (CLOUD SYNC REMOVED)
-
-        // Adopt the server's data as the local base (used on first contact).
-        // Local ids become the server UUIDs so cross-references stay consistent.
-        // (CLOUD SYNC REMOVED)
-
-        // (CLOUD SYNC REMOVED)
-
-        // (CLOUD SYNC REMOVED)
-
-        // (CLOUD SYNC REMOVED)
-
-        // (CLOUD SYNC REMOVED)
-
-        // (CLOUD SYNC REMOVED)
 
         // (CLOUD SYNC REMOVED)
       }
