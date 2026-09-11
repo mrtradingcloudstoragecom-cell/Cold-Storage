@@ -1,6 +1,4 @@
 
-
-
 <!DOCTYPE html>
 <html lang="bn" class="h-full bg-[#F5F5F7] antialiased">
 <head>
@@ -2492,6 +2490,16 @@ import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, w
                   <label class="block text-xs text-apple-secondary mb-1">মাস সিলেক্ট করুন:</label>
                   <input type="month" x-model="selectedBillMonth" class="text-xs font-semibold p-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-zinc-800">
                 </div>
+                <div x-show="selectedClientId && selectedBillMonth" class="mt-4">
+                    <button x-show="!snapshots.some(s => s.clientId === selectedClientId && s.month === selectedBillMonth)" @click="lockMonth(selectedClientId, selectedBillMonth)" class="px-3 py-2 bg-amber-500 text-white rounded-xl text-xs font-bold hover:bg-amber-600 shadow-sm flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        এই মাস লক করুন
+                    </button>
+                    <button x-show="snapshots.some(s => s.clientId === selectedClientId && s.month === selectedBillMonth)" disabled class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-not-allowed">
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+                        লকড
+                    </button>
+                </div>
               </div>
               <div x-show="currentBill" class="text-[11px] text-apple-secondary flex items-center gap-2">
                 <span class="px-2 py-1 rounded-full bg-apple-green/10 text-apple-green font-semibold">অটো</span>
@@ -4731,7 +4739,7 @@ import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, w
         <template x-if="editingClient">
         <div class="pt-2 border-t dark:border-gray-800">
           <p class="font-semibold mb-1">এই ক্লায়েন্টের দরের ইতিহাস (তারিখ রেঞ্জ অনুযায়ী):</p>
-          <p class="text-[10px] text-apple-secondary mb-2 leading-relaxed">কার্যকর শুরু ও শেষ তারিখের মধ্যে প্রতিদিনের ভাড়া সেই দরে হিসাব হবে। পুরনো এন্ট্রিও নতুন দরে পুনরায় হিসাব হবে।</p>
+          <p class="text-[10px] text-apple-secondary mb-2 leading-relaxed">কার্যকর শুরু ও শেষ তারিখের মধ্যে প্রতিদিনের ভাড়া সেই দরে হিসাব হবে। পুরনো মাসগুলো নিজের দরে ফ্রিজ থাকবে।</p>
 
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2">
             <div>
@@ -5066,6 +5074,9 @@ import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, w
         savingText: '',
         loadingText: '',
         _memoCache: {},
+        _memoOwners: {},
+        _derivedCache: {},
+        _dv: 0,
         showToast: false,
         toastText: '',
         toastType: 'success',
@@ -5579,6 +5590,7 @@ saveToFirestore(col, rec) {
            const docId = rec.id || rec._id || (col === 'settings' ? 'app_settings' : null);
            if (!docId) { console.error("Firestore save [", col, "] skipped — no id"); return; }
            if (!window.firebaseApp) return;
+           this._bumpDataVersion();
            const docRef = window.firebaseApp.doc(window.firebaseApp.collection(window.firebaseApp.db, col), docId);
            const clean = JSON.parse(JSON.stringify(rec));
            window.firebaseApp.setDoc(docRef, clean, { merge: true })
@@ -5597,6 +5609,7 @@ saveToFirestore(col, rec) {
            const docId = rec.id || rec._id || (col === 'settings' ? 'app_settings' : null);
            if (!docId) { console.error("Firestore save [", col, "] skipped — no id"); return; }
            if (!window.firebaseApp) return;
+           this._bumpDataVersion();
            try {
              const docRef = window.firebaseApp.doc(window.firebaseApp.collection(window.firebaseApp.db, col), docId);
              const clean = JSON.parse(JSON.stringify(rec));
@@ -5609,6 +5622,25 @@ saveToFirestore(col, rec) {
              this.syncStatus = 'offline';
              this.syncStatusText = 'লোকালে সেভ হয়েছে';
              if (mapped.cat === 'quota') this.showToastMsg('সেভ হয়েছে! ক্লাউডে অটো-সিঙ্ক হবে।', 'saving', 3000);
+             else this.showToastMsg(mapped.msg, 'error', 8000);
+           }
+         },
+
+
+        async deleteFromFirestore(col, id) {
+           if (!id) return;
+           if (!window.firebaseApp) return;
+           try {
+             const docRef = window.firebaseApp.doc(window.firebaseApp.collection(window.firebaseApp.db, col), id);
+             await this._withTimeout(window.firebaseApp.deleteDoc(docRef), 15000);
+             this.syncStatus = 'synced';
+             this.syncStatusText = 'ডিলিট সেভ হয়েছে';
+           } catch (e) {
+             console.error("Firestore delete [", col, "] error:", e);
+             const mapped = this._hintForError(e && e.code);
+             this.syncStatus = 'offline';
+             this.syncStatusText = 'ডিলিট পরবর্তীতে হবে';
+             if (mapped.cat === 'quota') this.showToastMsg('ডিলিট হয়েছে! ক্লাউডে অটো-সিঙ্ক হবে।', 'saving', 3000);
              else this.showToastMsg(mapped.msg, 'error', 8000);
            }
          },
@@ -5784,6 +5816,9 @@ async loadDataFromFirestore() {
              const currentIds = new Set((this[field] || []).map(r => r.id));
              const toAdd = fetched.filter(r => !currentIds.has(r.id));
              if (toAdd.length > 0) this[field] = [...(this[field] || []), ...toAdd];
+             // পুরনো মাস যোগ হওয়ায় বিল/দর-মেমো আর derived ক্যাশ পুরনো — নতুন করে হিসাব করাই।
+             this.clearMemo();
+             this._bumpDataVersion();
            } catch (e) {
              console.error("fetchOlderData error [", col, "]:", e);
            }
@@ -5792,6 +5827,7 @@ async loadDataFromFirestore() {
         // এক কালেকশনের snapshot-কে স্টেটে প্রয়োগ করে। রিয়েল-টাইম আপডেটে ডেরাইভড
         // (হিসাব-হীন) ফিল্ডগুলো লোকালে আবার হিসাব করার দরকার হয় না — শুধু কাঁচা ডেটা বদলাই।
         _applySnapshot(col, snap, applyCollection) {
+          this._bumpDataVersion();
           Promise.resolve(applyCollection(col, snap.docs)).catch(err => console.error("apply snapshot error [", col, "]:", err));
         },
 
@@ -6054,20 +6090,22 @@ if (confirm('স্টোর "' + store.name + '" মুছে ফেলবে�
 
         // Aggregate current stock per store across all clients.
         getStoreStock() {
-          const agg = {};
-          this.stores.forEach(s => { agg[s.id] = { bags: 0, kg: 0 }; });
-          this.clients.forEach(c => {
-            Object.keys(c.storeStock || {}).forEach(sid => {
-              agg[sid] = agg[sid] || { bags: 0, kg: 0 };
-              agg[sid].bags += c.storeStock[sid].bags || 0;
-              agg[sid].kg += c.storeStock[sid].kg || 0;
+          return this._dcache('storeStock', () => {
+            const agg = {};
+            this.stores.forEach(s => { agg[s.id] = { bags: 0, kg: 0 }; });
+            this.clients.forEach(c => {
+              Object.keys(c.storeStock || {}).forEach(sid => {
+                agg[sid] = agg[sid] || { bags: 0, kg: 0 };
+                agg[sid].bags += c.storeStock[sid].bags || 0;
+                agg[sid].kg += c.storeStock[sid].kg || 0;
+              });
             });
+            return this.stores.map(s => ({ id: s.id, code: s.code, name: s.name, location: s.location, bags: agg[s.id].bags, kg: agg[s.id].kg }));
           });
-          return this.stores.map(s => ({ id: s.id, code: s.code, name: s.name, location: s.location, bags: agg[s.id].bags, kg: agg[s.id].kg }));
         },
 
         getStoreStockMax() {
-          return Math.max(...this.getStoreStock().map(s => Math.max(s.bags, s.kg)), 1);
+          return this._dcache('storeStockMax', () => Math.max(...this.getStoreStock().map(s => Math.max(s.bags, s.kg)), 1));
         },
 
         // ===== STORE REPORTS (date-range based) =====
@@ -6076,68 +6114,85 @@ if (confirm('স্টোর "' + store.name + '" মুছে ফেলবে�
           const from = this.storeReportFrom;
           const to = this.storeReportTo;
           if (!from || !to) return [];
-          return this.ledgerEntries
-            .filter(e => e.date >= from && e.date <= to)
-            .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+          return this._dcache('storeEntries_' + from + '_' + to, () => {
+            return this.ledgerEntries
+              .filter(e => e.date >= from && e.date <= to)
+              .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+          });
         },
 
         // Per-store aggregation over the range: in/out totals.
         getStoreMovementReport() {
-          const rows = this.stores.map(s => ({
-            id: s.id,
-            code: s.code,
-            name: s.name,
-            inBags: 0, inKg: 0,
-            outBags: 0, outKg: 0
-          }));
-          const idx = {};
-          rows.forEach(r => { idx[r.id] = r; });
-          this.storeReportEntries().forEach(e => {
-            if (e.stockIn && (e.stockIn.bags || e.stockIn.kg)) {
-              const r = idx[e.stockIn.storeId] || idx[this.getDefaultStoreId()];
-              if (r) { r.inBags += e.stockIn.bags || 0; r.inKg += e.stockIn.kg || 0; }
-            }
-            if (e.delivery && (e.delivery.bags || e.delivery.kg)) {
-              const r = idx[e.delivery.storeId] || idx[this.getDefaultStoreId()];
-              if (r) { r.outBags += e.delivery.bags || 0; r.outKg += e.delivery.kg || 0; }
-            }
+          const from = this.storeReportFrom;
+          const to = this.storeReportTo;
+          if (!from || !to) return [];
+          return this._dcache('storeMov_' + from + '_' + to, () => {
+            const rows = this.stores.map(s => ({
+              id: s.id,
+              code: s.code,
+              name: s.name,
+              inBags: 0, inKg: 0,
+              outBags: 0, outKg: 0
+            }));
+            const idx = {};
+            rows.forEach(r => { idx[r.id] = r; });
+            this.storeReportEntries().forEach(e => {
+              if (e.stockIn && (e.stockIn.bags || e.stockIn.kg)) {
+                const r = idx[e.stockIn.storeId] || idx[this.getDefaultStoreId()];
+                if (r) { r.inBags += e.stockIn.bags || 0; r.inKg += e.stockIn.kg || 0; }
+              }
+              if (e.delivery && (e.delivery.bags || e.delivery.kg)) {
+                const r = idx[e.delivery.storeId] || idx[this.getDefaultStoreId()];
+                if (r) { r.outBags += e.delivery.bags || 0; r.outKg += e.delivery.kg || 0; }
+              }
+            });
+            return rows;
           });
-          return rows;
         },
 
         // Per-client × per-store matrix over the range.
         getClientStoreReport() {
-          return this.clients.map(c => {
-            const agg = {};
-            this.stores.forEach(s => { agg[s.id] = { inBags: 0, inKg: 0, outBags: 0, outKg: 0 }; });
-            this.storeReportEntries()
-              .filter(e => e.clientId === c.id)
-              .forEach(e => {
-                if (e.stockIn && (e.stockIn.bags || e.stockIn.kg)) {
-                  const a = agg[e.stockIn.storeId] || agg[this.getDefaultStoreId()];
-                  if (a) { a.inBags += e.stockIn.bags || 0; a.inKg += e.stockIn.kg || 0; }
-                }
-                if (e.delivery && (e.delivery.bags || e.delivery.kg)) {
-                  const a = agg[e.delivery.storeId] || agg[this.getDefaultStoreId()];
-                  if (a) { a.outBags += e.delivery.bags || 0; a.outKg += e.delivery.kg || 0; }
-                }
-              });
-            return { client: c, stores: agg };
+          const from = this.storeReportFrom;
+          const to = this.storeReportTo;
+          if (!from || !to) return [];
+          return this._dcache('storeClient_' + from + '_' + to, () => {
+            return this.clients.map(c => {
+              const agg = {};
+              this.stores.forEach(s => { agg[s.id] = { inBags: 0, inKg: 0, outBags: 0, outKg: 0 }; });
+              this.storeReportEntries()
+                .filter(e => e.clientId === c.id)
+                .forEach(e => {
+                  if (e.stockIn && (e.stockIn.bags || e.stockIn.kg)) {
+                    const a = agg[e.stockIn.storeId] || agg[this.getDefaultStoreId()];
+                    if (a) { a.inBags += e.stockIn.bags || 0; a.inKg += e.stockIn.kg || 0; }
+                  }
+                  if (e.delivery && (e.delivery.bags || e.delivery.kg)) {
+                    const a = agg[e.delivery.storeId] || agg[this.getDefaultStoreId()];
+                    if (a) { a.outBags += e.delivery.bags || 0; a.outKg += e.delivery.kg || 0; }
+                  }
+                });
+              return { client: c, stores: agg };
+            });
           });
         },
 
         // Daily summary over the range (one row per day).
         getDailyStoreReport() {
-          const days = {};
-          this.storeReportEntries().forEach(e => {
-            if (!days[e.date]) days[e.date] = { date: e.date, inBags: 0, inKg: 0, outBags: 0, outKg: 0 };
-            const d = days[e.date];
-            d.inBags += e.stockIn?.bags || 0;
-            d.inKg += e.stockIn?.kg || 0;
-            d.outBags += e.delivery?.bags || 0;
-            d.outKg += e.delivery?.kg || 0;
+          const from = this.storeReportFrom;
+          const to = this.storeReportTo;
+          if (!from || !to) return [];
+          return this._dcache('storeDaily_' + from + '_' + to, () => {
+            const days = {};
+            this.storeReportEntries().forEach(e => {
+              if (!days[e.date]) days[e.date] = { date: e.date, inBags: 0, inKg: 0, outBags: 0, outKg: 0 };
+              const d = days[e.date];
+              d.inBags += e.stockIn?.bags || 0;
+              d.inKg += e.stockIn?.kg || 0;
+              d.outBags += e.delivery?.bags || 0;
+              d.outKg += e.delivery?.kg || 0;
+            });
+            return Object.keys(days).sort().map(k => days[k]);
           });
-          return Object.keys(days).sort().map(k => days[k]);
         },
 
         // Per-store totals of the CURRENT stock (from client storeStock snapshots).
@@ -6147,13 +6202,18 @@ if (confirm('স্টোর "' + store.name + '" মুছে ফেলবে�
 
         // Grand totals for the movement report.
         getStoreMovementTotals() {
-          const rows = this.getStoreMovementReport();
-          return {
-            inBags: rows.reduce((s, r) => s + r.inBags, 0),
-            inKg: rows.reduce((s, r) => s + r.inKg, 0),
-            outBags: rows.reduce((s, r) => s + r.outBags, 0),
-            outKg: rows.reduce((s, r) => s + r.outKg, 0)
-          };
+          const from = this.storeReportFrom;
+          const to = this.storeReportTo;
+          if (!from || !to) return { inBags: 0, inKg: 0, outBags: 0, outKg: 0 };
+          return this._dcache('storeMovTot_' + from + '_' + to, () => {
+            const rows = this.getStoreMovementReport();
+            return {
+              inBags: rows.reduce((s, r) => s + r.inBags, 0),
+              inKg: rows.reduce((s, r) => s + r.inKg, 0),
+              outBags: rows.reduce((s, r) => s + r.outBags, 0),
+              outKg: rows.reduce((s, r) => s + r.outKg, 0)
+            };
+          });
         },
 
         // ===== Client Warehouse Stock & Movement Report =====
@@ -6161,79 +6221,101 @@ if (confirm('স্টোর "' + store.name + '" মুছে ফেলবে�
           const from = this.warehouseReportFrom;
           const to = this.warehouseReportTo;
           if (!from || !to) return [];
-          let list = this.ledgerEntries.filter(e => e.date >= from && e.date <= to);
           const type = this.warehouseReportType;
-          if ((type === 'single-client' || type === 'client-warehouse') && this.warehouseReportClientId) {
-            list = list.filter(e => e.clientId === this.warehouseReportClientId);
-          }
-          if ((type === 'single-warehouse' || type === 'client-warehouse') && this.warehouseReportStoreId) {
-            list = list.filter(e => (e.stockIn && e.stockIn.storeId === this.warehouseReportStoreId) || (e.delivery && e.delivery.storeId === this.warehouseReportStoreId));
-          }
-          return list.slice().sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+          const cid = (type === 'single-client' || type === 'client-warehouse') ? (this.warehouseReportClientId || '') : '';
+          const sid = (type === 'single-warehouse' || type === 'client-warehouse') ? (this.warehouseReportStoreId || '') : '';
+          return this._dcache('wsEnt_' + from + '_' + to + '_' + type + '_' + cid + '_' + sid, () => {
+            let list = this.ledgerEntries.filter(e => e.date >= from && e.date <= to);
+            if (cid) {
+              list = list.filter(e => e.clientId === cid);
+            }
+            if (sid) {
+              list = list.filter(e => (e.stockIn && e.stockIn.storeId === sid) || (e.delivery && e.delivery.storeId === sid));
+            }
+            return list.slice().sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+          });
         },
 
         warehouseStockRows() {
-          const rows = [];
-          const idx = {};
-          const getRow = (client, storeId) => {
-            const key = client.id + '|' + storeId;
-            if (!idx[key]) {
-              const store = this.stores.find(s => s.id === storeId);
-              const r = {
-                key,
-                clientId: client.clientId,
-                clientName: client.name,
-                storeId,
-                storeCode: store ? store.code : '—',
-                storeName: store ? store.name : '—',
-                inKg: 0, inBags: 0, outKg: 0, outBags: 0
-              };
-              idx[key] = r;
-              rows.push(r);
-            }
-            return idx[key];
-          };
-          this.warehouseReportEntries().forEach(e => {
-            const client = this.clients.find(c => c.id === e.clientId);
-            if (!client) return;
-            if (e.stockIn && (e.stockIn.bags || e.stockIn.kg)) {
-              const r = getRow(client, e.stockIn.storeId || this.getDefaultStoreId());
-              r.inKg += e.stockIn.kg || 0; r.inBags += e.stockIn.bags || 0;
-            }
-            if (e.delivery && (e.delivery.bags || e.delivery.kg)) {
-              const r = getRow(client, e.delivery.storeId || this.getDefaultStoreId());
-              r.outKg += e.delivery.kg || 0; r.outBags += e.delivery.bags || 0;
-            }
+          const from = this.warehouseReportFrom;
+          const to = this.warehouseReportTo;
+          if (!from || !to) return [];
+          const type = this.warehouseReportType;
+          const cid = (type === 'single-client' || type === 'client-warehouse') ? (this.warehouseReportClientId || '') : '';
+          const sid = (type === 'single-warehouse' || type === 'client-warehouse') ? (this.warehouseReportStoreId || '') : '';
+          return this._dcache('wsRows_' + from + '_' + to + '_' + type + '_' + cid + '_' + sid, () => {
+            const rows = [];
+            const idx = {};
+            const clientsIdx = this._clientIndex();
+            const getRow = (client, storeId) => {
+              const key = client.id + '|' + storeId;
+              if (!idx[key]) {
+                const store = this.stores.find(s => s.id === storeId);
+                const r = {
+                  key,
+                  clientId: client.clientId,
+                  clientName: client.name,
+                  storeId,
+                  storeCode: store ? store.code : '—',
+                  storeName: store ? store.name : '—',
+                  inKg: 0, inBags: 0, outKg: 0, outBags: 0
+                };
+                idx[key] = r;
+                rows.push(r);
+              }
+              return idx[key];
+            };
+            this.warehouseReportEntries().forEach(e => {
+              const client = clientsIdx.get(e.clientId);
+              if (!client) return;
+              if (e.stockIn && (e.stockIn.bags || e.stockIn.kg)) {
+                const r = getRow(client, e.stockIn.storeId || this.getDefaultStoreId());
+                r.inKg += e.stockIn.kg || 0; r.inBags += e.stockIn.bags || 0;
+              }
+              if (e.delivery && (e.delivery.bags || e.delivery.kg)) {
+                const r = getRow(client, e.delivery.storeId || this.getDefaultStoreId());
+                r.outKg += e.delivery.kg || 0; r.outBags += e.delivery.bags || 0;
+              }
+            });
+            rows.forEach(r => { r.currentKg = r.inKg - r.outKg; r.currentBags = r.inBags - r.outBags; });
+            rows.sort((a, b) => (a.clientName < b.clientName ? -1 : a.clientName > b.clientName ? 1 : (a.storeName < b.storeName ? -1 : 1)));
+            return rows;
           });
-          rows.forEach(r => { r.currentKg = r.inKg - r.outKg; r.currentBags = r.inBags - r.outBags; });
-          rows.sort((a, b) => (a.clientName < b.clientName ? -1 : a.clientName > b.clientName ? 1 : (a.storeName < b.storeName ? -1 : 1)));
-          return rows;
         },
 
         warehouseStockTotals() {
-          const rows = this.warehouseStockRows();
-          const t = { inKg: 0, inBags: 0, outKg: 0, outBags: 0 };
-          rows.forEach(r => { t.inKg += r.inKg; t.inBags += r.inBags; t.outKg += r.outKg; t.outBags += r.outBags; });
-          t.currentKg = t.inKg - t.outKg;
-          t.currentBags = t.inBags - t.outBags;
-          const clientSet = {};
-          this.warehouseReportEntries().forEach(e => { clientSet[e.clientId] = 1; });
-          t.totalClients = Object.keys(clientSet).length;
-          const storeSet = {};
-          this.warehouseReportEntries().forEach(e => {
-            if (e.stockIn && (e.stockIn.bags || e.stockIn.kg)) storeSet[e.stockIn.storeId || this.getDefaultStoreId()] = 1;
-            if (e.delivery && (e.delivery.bags || e.delivery.kg)) storeSet[e.delivery.storeId || this.getDefaultStoreId()] = 1;
+          const from = this.warehouseReportFrom;
+          const to = this.warehouseReportTo;
+          if (!from || !to) return { inKg: 0, inBags: 0, outKg: 0, outBags: 0, currentKg: 0, currentBags: 0, totalClients: 0, totalWarehouses: 0 };
+          const type = this.warehouseReportType;
+          const cid = (type === 'single-client' || type === 'client-warehouse') ? (this.warehouseReportClientId || '') : '';
+          const sid = (type === 'single-warehouse' || type === 'client-warehouse') ? (this.warehouseReportStoreId || '') : '';
+          return this._dcache('wsTot_' + from + '_' + to + '_' + type + '_' + cid + '_' + sid, () => {
+            const rows = this.warehouseStockRows();
+            const t = { inKg: 0, inBags: 0, outKg: 0, outBags: 0 };
+            rows.forEach(r => { t.inKg += r.inKg; t.inBags += r.inBags; t.outKg += r.outKg; t.outBags += r.outBags; });
+            t.currentKg = t.inKg - t.outKg;
+            t.currentBags = t.inBags - t.outBags;
+            const clientSet = {};
+            this.warehouseReportEntries().forEach(e => { clientSet[e.clientId] = 1; });
+            t.totalClients = Object.keys(clientSet).length;
+            const storeSet = {};
+            this.warehouseReportEntries().forEach(e => {
+              if (e.stockIn && (e.stockIn.bags || e.stockIn.kg)) storeSet[e.stockIn.storeId || this.getDefaultStoreId()] = 1;
+              if (e.delivery && (e.delivery.bags || e.delivery.kg)) storeSet[e.delivery.storeId || this.getDefaultStoreId()] = 1;
+            });
+            t.totalWarehouses = Object.keys(storeSet).length;
+            return t;
           });
-          t.totalWarehouses = Object.keys(storeSet).length;
-          return t;
         },
 
         warehouseStockDetails() {
           const rows = [];
           const running = {};
           const addRun = (key, kg, bags) => { running[key] = running[key] || { kg: 0, bags: 0 }; running[key].kg += kg; running[key].bags += bags; };
+          const clientsIdx = this._clientIndex();
           this.warehouseReportEntries().forEach(e => {
-            const client = this.clients.find(c => c.id === e.clientId);
+            const client = clientsIdx.get(e.clientId);
             if (!client) return;
             const inStore = e.stockIn ? (e.stockIn.storeId || this.getDefaultStoreId()) : null;
             const outStore = e.delivery ? (e.delivery.storeId || this.getDefaultStoreId()) : null;
@@ -6320,11 +6402,15 @@ if (confirm('স্টোর "' + store.name + '" মুছে ফেলবে�
         },
 
         // CORE BILLING ENGINE & RECALCULATION LOGIC
-        recalculateClientLedger(clientId) {
+        recalculateClientLedger(clientId, preEntries) {
+          // একক-ক্লায়েন্ট recalc (বাল্ক recalc-এ নয়): নতুন data-version শুরু করে দিই,
+          // যেন পরবর্তী টেমপ্লেট রি-রেন্ডার পুরনো derived ক্যাশ না পায়।
+          this._clearClientMemo(clientId);
+          if (preEntries === undefined) this._bumpDataVersion();
           const client = this.clients.find(c => c.id === clientId);
           if (!client) return;
 
-          const entries = this.ledgerEntries
+          const entries = preEntries || this.ledgerEntries
             .filter(e => e.clientId === clientId)
             .sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -6382,8 +6468,8 @@ if (confirm('স্টোর "' + store.name + '" মুছে ফেলবে�
 
           // Transfers move money between a client's IDs: they adjust the balance but are
           // NEVER a deposit — no জমা register, no income, no bill-জমা column entry.
-          (this.payments || []).forEach(p => {
-            if (this.isTransferMethod(p) && p.clientId === clientId) {
+          (this._paymentsIndex().get(clientId) || []).forEach(p => {
+            if (this.isTransferMethod(p)) {
               runningBalance = this.round2(runningBalance + this.transferBalanceDelta(p));
             }
           });
@@ -6403,15 +6489,119 @@ if (confirm('স্টোর "' + store.name + '" মুছে ফেলবে�
             }
           } catch (e) { /* recalc ঢুকলে bill fail হলে stored value রাখা */ }
 client.storeStock = storeStock;
-           this.clearMemo();
          },
 
-        recalculateAllClients() {
-          this.clients.forEach(c => this.recalculateClientLedger(c.id));
-          this.clearMemo();
+        // ৪০০+ ক্লায়েন্টে হ্যাং না হওয়ার জন্য:
+        // ১) পুরনো data-version বদলালে derived (গণনাকৃত) ফলাফল একবারই নতুন করে হিসাব হয় —
+        //    প্রতিটি Alpine রি-রেন্ডারে বারবার হেভি গণনা হয় না।
+        // ২) bill/rate মেমো আর প্রতি recalc-এ সবাইর সবার মেমো মুছে যায় না —
+        //    শুধু সংশ্লিষ্ট ক্লায়েন্টের মেমো invalidation হয়।
+        _bumpDataVersion() {
+          this._dv = (this._dv || 0) + 1;
+          this._derivedCache = {};
         },
 
-        clearMemo() { this._memoCache = {}; },
+        _dcache(key, fn) {
+          const dv = this._dv || 0;
+          const c = this._derivedCache && this._derivedCache[key];
+          if (c && c.dv === dv) return c.val;
+          const val = fn();
+          if (!this._derivedCache) this._derivedCache = {};
+          this._derivedCache[key] = { dv, val };
+          return val;
+        },
+
+        _setMemo(key, val, clientId) {
+          this._memoCache[key] = val;
+          if (clientId != null) {
+            if (!this._memoOwners) this._memoOwners = {};
+            (this._memoOwners[clientId] = this._memoOwners[clientId] || new Set()).add(key);
+          }
+          return val;
+        },
+
+        _clearClientMemo(clientId) {
+          if (!this._memoOwners) this._memoOwners = {};
+          if (!this._memoOwners[clientId]) return;
+          this._memoOwners[clientId].forEach(k => delete this._memoCache[k]);
+          this._memoOwners[clientId] = new Set();
+        },
+
+        // ক্লায়েন্ট-আইডি → [সর্টেড লেজার এন্ট্রি] সূচি। recalc-এ প্রতিটি ক্লায়েন্টের জন্য
+        // সম্পূর্ণ ledgerEntries স্ক্যান এড়াতে (O(ক্লায়েন্ট×এন্ট্রি) → O(এন্ট্রি))।
+        _entriesIndex() {
+          return this._dcache('eidx', () => {
+            const m = new Map();
+            this.ledgerEntries.forEach(e => {
+              if (!m.has(e.clientId)) m.set(e.clientId, []);
+              m.get(e.clientId).push(e);
+            });
+            m.forEach(list => list.sort((a, b) => new Date(a.date) - new Date(b.date)));
+            return m;
+          });
+        },
+
+        // একই রকম payments সূচি (ট্রান্সফার/জমা/চার্জ হিসাবের জন্য)।
+        _paymentsIndex() {
+          return this._dcache('pidx', () => {
+            const m = new Map();
+            (this.payments || []).forEach(p => {
+              if (!m.has(p.clientId)) m.set(p.clientId, []);
+              m.get(p.clientId).push(p);
+            });
+            m.forEach(list => list.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)));
+            return m;
+          });
+        },
+
+        // ক্লায়েন্ট-id → ক্লায়েন্ট অবজেক্ট (বারবার `.find` এড়াতে)।
+        _clientIndex() {
+          return this._dcache('cidx', () => {
+            const m = new Map();
+            this.clients.forEach(c => m.set(c.id, c));
+            return m;
+          });
+        },
+
+        recalculateAllClients() {
+          // Bulk recalc: ডেটা-ভার্সন বদল + সব বিল/দর মেমো মুছে — যেন গ্লোবাল রেট/সেটিংস বদল
+          // সব ক্লায়েন্টের পুরনো বিল পুনরায় হিসাব হয় (single-সেভের মতো নয়, এখানে সবাই আক্রান্ত)।
+          this._bumpDataVersion();
+          this.clearMemo();
+          const sorted = this.ledgerEntries.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+          const byClient = {};
+          sorted.forEach(e => { (byClient[e.clientId] = byClient[e.clientId] || []).push(e); });
+          this.clients.forEach(c => this.recalculateClientLedger(c.id, byClient[c.id] || []));
+        },
+
+        async lockMonth(clientId, month) {
+            const bill = this.buildMonthlyBill(clientId, month);
+            if (!bill) return;
+            const snap = {
+                id: clientId + '_' + month,
+                clientId,
+                month,
+                rows: bill.rows,
+                openingStock: bill.openingStock,
+                openingBalance: bill.openingBalance,
+                closingStock: bill.closingStock,
+                closingBalance: bill.closingBalance,
+                totalCharge: bill.totalCharge,
+                totalDeposit: bill.totalDeposit,
+                monthlyCharge: bill.monthlyCharge,
+                laborCharge: bill.laborCharge,
+                transferIn: bill.transferIn,
+                transferOut: bill.transferOut,
+                totalDeliveryKg: bill.totalDeliveryKg,
+                lockedAt: new Date().toISOString()
+            };
+            await this.saveToFirestore('monthly_bill_snapshots', snap);
+            this.showToastMsg('এই মাসের বিল লক করা হয়েছে।', 'success', 3000);
+            // Refresh snapshots local state
+            this.snapshots = [...this.snapshots.filter(s => s.id !== snap.id), snap];
+        },
+
+        clearMemo() { this._memoCache = {}; this._memoOwners = {}; },
 
         memo(key, fn) {
           if (this._memoCache[key] !== undefined) return this._memoCache[key];
@@ -6442,33 +6632,43 @@ client.storeStock = storeStock;
         round2(n) { return Math.round((n || 0) * 100) / 100; },
 
         getEffectiveRate(clientId, date) {
+          const mkey = 'r_' + clientId + '_' + date;
+          if (this._memoCache[mkey] !== undefined) return this._memoCache[mkey];
           const client = this.clients.find(c => c.id === clientId);
           const clientHistory = this.rates
             .filter(r => r.scope === 'client' && r.clientId === clientId && r.effectiveFrom <= date && (!r.effectiveTo || r.effectiveTo >= date))
             .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
-          if (clientHistory.length) return clientHistory[0].rate;
-          if (client && client.ratePerKgPerDay) return client.ratePerKgPerDay;
-          const globalHistory = this.rates
-            .filter(r => r.scope === 'global' && r.effectiveFrom <= date && (!r.effectiveTo || r.effectiveTo >= date))
-            .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
-          if (globalHistory.length) return globalHistory[0].rate;
-          return this.settings.globalRate || 0.13;
+          let r;
+          if (clientHistory.length) r = clientHistory[0].rate;
+          else if (client && client.ratePerKgPerDay) r = client.ratePerKgPerDay;
+          else {
+            const globalHistory = this.rates
+              .filter(r2 => r2.scope === 'global' && r2.effectiveFrom <= date && (!r2.effectiveTo || r2.effectiveTo >= date))
+              .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
+            r = globalHistory.length ? globalHistory[0].rate : (this.settings.globalRate || 0.13);
+          }
+          return this._setMemo(mkey, r, clientId);
         },
 
         // Bill shows displayRate; the actual charge is computed with getEffectiveRate.
         getEffectiveDisplayRate(clientId, date) {
+          const mkey = 'dr_' + clientId + '_' + date;
+          if (this._memoCache[mkey] !== undefined) return this._memoCache[mkey];
           const client = this.clients.find(c => c.id === clientId);
           const clientHistory = this.rates
             .filter(r => r.scope === 'client' && r.clientId === clientId && r.effectiveFrom <= date && (!r.effectiveTo || r.effectiveTo >= date))
             .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
-          if (clientHistory.length) return clientHistory[0].displayRate || clientHistory[0].rate;
-          if (client && client.displayRatePerKgPerDay) return client.displayRatePerKgPerDay;
-          if (client && client.ratePerKgPerDay) return client.ratePerKgPerDay;
-          const globalHistory = this.rates
-            .filter(r => r.scope === 'global' && r.effectiveFrom <= date && (!r.effectiveTo || r.effectiveTo >= date))
-            .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
-          if (globalHistory.length) return globalHistory[0].displayRate || globalHistory[0].rate;
-          return this.settings.displayGlobalRate || this.settings.globalRate || 0.13;
+          let r;
+          if (clientHistory.length) r = clientHistory[0].displayRate || clientHistory[0].rate;
+          else if (client && client.displayRatePerKgPerDay) r = client.displayRatePerKgPerDay;
+          else if (client && client.ratePerKgPerDay) r = client.ratePerKgPerDay;
+          else {
+            const globalHistory = this.rates
+              .filter(r2 => r2.scope === 'global' && r2.effectiveFrom <= date && (!r2.effectiveTo || r2.effectiveTo >= date))
+              .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
+            r = globalHistory.length ? (globalHistory[0].displayRate || globalHistory[0].rate) : (this.settings.displayGlobalRate || this.settings.globalRate || 0.13);
+          }
+          return this._setMemo(mkey, r, clientId);
         },
 
         // The client rate-history entry that governs TODAY (latest-start active range).
@@ -6486,17 +6686,15 @@ client.storeStock = storeStock;
           let kg = client.openingStock?.kg || 0;
           let bal = client.openingBalance || 0;
           const monthStart = month + '-01';
-          this.ledgerEntries
-            .filter(e => e.clientId === clientId && e.date < monthStart)
-            .sort((a, b) => a.date.localeCompare(b.date))
-            .forEach(e => {
-              bags += (e.stockIn?.bags || 0) - (e.delivery?.bags || 0);
-              kg += (e.stockIn?.kg || 0) - (e.delivery?.kg || 0);
-              bal = this.round2(bal + (e.dailyCharge || 0) - (e.deposit || 0));
-            });
+          (this._entriesIndex().get(clientId) || []).forEach(e => {
+            if (e.date >= monthStart) return;
+            bags += (e.stockIn?.bags || 0) - (e.delivery?.bags || 0);
+            kg += (e.stockIn?.kg || 0) - (e.delivery?.kg || 0);
+            bal = this.round2(bal + (e.dailyCharge || 0) - (e.deposit || 0));
+          });
           // ট্রান্সফার আগের মাসে হয়ে থাকলে তা সাবেক টাকার (opening) অংশ — জমা নয়
-          (this.payments || []).forEach(p => {
-            if (this.isTransferMethod(p) && p.clientId === clientId && p.date < monthStart) {
+          (this._paymentsIndex().get(clientId) || []).forEach(p => {
+            if (this.isTransferMethod(p) && p.date < monthStart) {
               bal = this.round2(bal + this.transferBalanceDelta(p));
             }
           });
@@ -6517,14 +6715,14 @@ client.storeStock = storeStock;
             (snap.rows || []).forEach(r => { if (r.rateSpan === undefined) r.rateSpan = 1; });
             if (snap.laborCharge === undefined) snap.laborCharge = 0;
             if (snap.monthlyCharge === undefined) {
-              const mc = (this.payments || []).filter(p => !this.isTransferMethod(p) && p.clientId === clientId && (p.date || '').slice(0, 7) === month).reduce((s, p) => s + (Number(p.charge) || 0), 0);
+              const mc = (this._paymentsIndex().get(clientId) || []).filter(p => !this.isTransferMethod(p) && (p.date || '').slice(0, 7) === month).reduce((s, p) => s + (Number(p.charge) || 0), 0);
               snap.monthlyCharge = mc;
               if (mc) {
                 snap.totalCharge = this.round2((snap.totalCharge || 0) + mc);
                 snap.closingBalance = this.round2((snap.closingBalance || 0) + mc);
               }
             }
-            if (!project) this._memoCache[cacheKey] = snap;
+            if (!project) this._setMemo(cacheKey, snap, clientId);
             return snap;
           }
 
@@ -6548,8 +6746,8 @@ client.storeStock = storeStock;
           // চেইন সবসময় শুরু হয় — কারণ বিলের ডে-রো-ই সেই সূচনার মাস।
           let openingBalance = start.bal;
           const firstAct = [];
-          this.ledgerEntries.forEach(e => { if (e.clientId === clientId && e.date) firstAct.push(e.date); });
-          (this.payments || []).forEach(p => { if (this.isTransferMethod(p) && p.clientId === clientId && p.date) firstAct.push(p.date); });
+          (this._entriesIndex().get(clientId) || []).forEach(e => { if (e.date) firstAct.push(e.date); });
+          (this._paymentsIndex().get(clientId) || []).forEach(p => { if (this.isTransferMethod(p) && p.date) firstAct.push(p.date); });
           const minDate = firstAct.length ? firstAct.sort()[0] : null;
           const ps = month.split('-').map(Number);
           const prevMonth = ps[1] === 1 ? (ps[0] - 1) + '-12' : ps[0] + '-' + String(ps[1] - 1).padStart(2, '0');
@@ -6565,16 +6763,14 @@ client.storeStock = storeStock;
           }
           let bags = start.bags, kg = start.kg, bal = start.bal;
 
-          const entries = this.ledgerEntries
-            .filter(e => e.clientId === clientId && e.date >= monthStart && e.date <= spanEnd)
-            .sort((a, b) => a.date.localeCompare(b.date));
+          const entries = (this._entriesIndex().get(clientId) || []).filter(e => e.date >= monthStart && e.date <= spanEnd);
           const byDate = {};
           entries.forEach(e => { byDate[e.date] = e; });
 
           // ট্রান্সফার (আইডি→আইডি টাকা-মুভ): এই মাসের ভেতরের ট্রান্সফারগুলো বিলের
           // "সাবেক টাকা" (opening) হিসেবেই ধরাই — জমা কলামে খোলে না, আয় হয় না।
           // ফলে Source-এর বিল ০ হয়ে যায়, আর Dest-এর সাবেক টাকায় সেই টাকা ঢুকে যায়।
-          const monthTransfers = (this.payments || []).filter(p => this.isTransferMethod(p) && p.clientId === clientId && p.date >= monthStart && p.date <= spanEnd);
+          const monthTransfers = (this._paymentsIndex().get(clientId) || []).filter(p => this.isTransferMethod(p) && p.date >= monthStart && p.date <= spanEnd);
           let transferIn = 0, transferOut = 0;
           let transfersNet = 0;
           monthTransfers.forEach(t => {
@@ -6613,7 +6809,7 @@ client.storeStock = storeStock;
           }
 
           // মাসিক চার্জ (লেবার/গাড়িভাড়া ইত্যাদি) — টাকা জমা রেজিস্টারে মাসিক চার্জ কলামে এন্ট্রি, বর্তমান মাসের বিলে যোগ হয়
-          const monthlyCharge = (this.payments || []).filter(p => !this.isTransferMethod(p) && p.clientId === clientId && (p.date || '').slice(0, 7) === month).reduce((s, p) => s + (Number(p.charge) || 0), 0);
+          const monthlyCharge = (this._paymentsIndex().get(clientId) || []).filter(p => !this.isTransferMethod(p) && (p.date || '').slice(0, 7) === month).reduce((s, p) => s + (Number(p.charge) || 0), 0);
           if (monthlyCharge) {
             totalCharge = this.round2(totalCharge + monthlyCharge);
             bal = this.round2(bal + monthlyCharge);
@@ -6623,6 +6819,8 @@ client.storeStock = storeStock;
           }
 
           // Merge identical consecutive displayed rates into one cell (rowspan).
+          const billDisplayRate = this.getEffectiveDisplayRate(clientId, spanEnd);
+          rows.forEach(r => r.ratePerKgPerDay = billDisplayRate);
           for (let i = 0; i < rows.length; i++) {
             let span = 1;
             while (i + span < rows.length && rows[i + span].ratePerKgPerDay === rows[i].ratePerKgPerDay) span++;
@@ -6648,7 +6846,7 @@ client.storeStock = storeStock;
             transferOut,
             generatedAt: new Date().toISOString()
           };
-          if (!project) this._memoCache[cacheKey] = result;
+          if (!project) this._setMemo(cacheKey, result, clientId);
           return result;
         },
 
@@ -6660,15 +6858,17 @@ client.storeStock = storeStock;
         get filteredClients() {
           const q = (this.clientSearchQuery || '').trim().toLowerCase();
           if (!q) return this.clients;
-          return this.clients.filter(c =>
-            (c.name || '').toLowerCase().includes(q) ||
-            (c.clientId || '').toLowerCase().includes(q) ||
-            (c.mobile || '').toLowerCase().includes(q)
-          );
+          return this._dcache('fcl_' + q, () => {
+            return this.clients.filter(c =>
+              (c.name || '').toLowerCase().includes(q) ||
+              (c.clientId || '').toLowerCase().includes(q) ||
+              (c.mobile || '').toLowerCase().includes(q)
+            );
+          });
         },
 
         get clientRangeReportClient() {
-          return this.clients.find(c => c.id === this.clientReportClientId) || null;
+          return this._clientIndex().get(this.clientReportClientId) || null;
         },
 
         // রিপোর্ট হেডারে তারিখ-রেঞ্জের বদলে মাস-নাম ও সাল (যেমন: সেপ্টেম্বর / ২০২৬ ইং)।
@@ -6828,7 +7028,9 @@ client.storeStock = storeStock;
 
         get clientRangeReport() {
           if (this.clientReportMode !== 'single' || !this.clientReportClientId) return null;
-          return this.buildClientRangeReport(this.clientReportClientId, this.clientReportFrom, this.clientReportTo);
+          return this._dcache('crr_' + this.clientReportClientId + '_' + this.clientReportFrom + '_' + this.clientReportTo, () => {
+            return this.buildClientRangeReport(this.clientReportClientId, this.clientReportFrom, this.clientReportTo);
+          });
         },
 
         // All-clients summary over [from, to]: per client opening/closing stock,
@@ -6837,49 +7039,59 @@ client.storeStock = storeStock;
           const from = this.clientReportFrom, to = this.clientReportTo;
           if (!from || !to || to < from) return [];
           const q = (this.clientSearchQuery || '').trim().toLowerCase();
-          return this.clients
-            .filter(c => !q ||
-              (c.name || '').toLowerCase().includes(q) ||
-              (c.clientId || '').toLowerCase().includes(q) ||
-              (c.mobile || '').toLowerCase().includes(q))
-            .map(client => {
-              const rep = this.buildClientRangeReport(client.id, from, to);
-              let inBags = 0, inKg = 0, outBags = 0, outKg = 0;
-              this.ledgerEntries
-                .filter(e => e.clientId === client.id && e.date >= from && e.date <= to)
-                .forEach(e => {
-                  inBags += e.stockIn?.bags || 0;
-                  inKg += e.stockIn?.kg || 0;
-                  outBags += e.delivery?.bags || 0;
-                  outKg += e.delivery?.kg || 0;
+          const key = 'crange_' + from + '_' + to + '_' + q;
+          return this._dcache(key, () => {
+            const idx = this._entriesIndex();
+            return this.clients
+              .filter(c => !q ||
+                (c.name || '').toLowerCase().includes(q) ||
+                (c.clientId || '').toLowerCase().includes(q) ||
+                (c.mobile || '').toLowerCase().includes(q))
+              .map(client => {
+                const rep = this.buildClientRangeReport(client.id, from, to);
+                let inBags = 0, inKg = 0, outBags = 0, outKg = 0;
+                (idx.get(client.id) || []).forEach(e => {
+                  if (e.date >= from && e.date <= to) {
+                    inBags += e.stockIn?.bags || 0;
+                    inKg += e.stockIn?.kg || 0;
+                    outBags += e.delivery?.bags || 0;
+                    outKg += e.delivery?.kg || 0;
+                  }
                 });
-              return {
-                client,
-                openingStock: rep ? rep.openingStock : { bags: client.openingStock?.bags || 0, kg: client.openingStock?.kg || 0 },
-                inBags, inKg, outBags, outKg,
-                closingStock: rep ? rep.closingStock : { bags: client.currentStock?.bags || 0, kg: client.currentStock?.kg || 0 },
-                totalCharge: rep ? rep.totalCharge : 0,
-                totalDeposit: rep ? rep.totalDeposit : 0,
-                closingBalance: rep ? rep.closingBalance : client.runningBalance || 0
-              };
-            });
+                return {
+                  client,
+                  openingStock: rep ? rep.openingStock : { bags: client.openingStock?.bags || 0, kg: client.openingStock?.kg || 0 },
+                  inBags, inKg, outBags, outKg,
+                  closingStock: rep ? rep.closingStock : { bags: client.currentStock?.bags || 0, kg: client.currentStock?.kg || 0 },
+                  totalCharge: rep ? rep.totalCharge : 0,
+                  totalDeposit: rep ? rep.totalDeposit : 0,
+                  closingBalance: rep ? rep.closingBalance : client.runningBalance || 0
+                };
+              });
+          });
         },
 
         getClientRangeTotals() {
-          const rows = this.getClientRangeSummary();
-          return rows.reduce((t, r) => ({
-            openKg: t.openKg + r.openingStock.kg,
-            openBags: t.openBags + r.openingStock.bags,
-            inBags: t.inBags + r.inBags,
-            inKg: t.inKg + r.inKg,
-            outBags: t.outBags + r.outBags,
-            outKg: t.outKg + r.outKg,
-            closeKg: t.closeKg + r.closingStock.kg,
-            closeBags: t.closeBags + r.closingStock.bags,
-            charge: t.charge + r.totalCharge,
-            deposit: t.deposit + r.totalDeposit,
-            balance: t.balance + r.closingBalance
-          }), { openKg: 0, openBags: 0, inBags: 0, inKg: 0, outBags: 0, outKg: 0, closeKg: 0, closeBags: 0, charge: 0, deposit: 0, balance: 0 });
+          const from = this.clientReportFrom, to = this.clientReportTo;
+          if (!from || !to || to < from) return { openKg: 0, openBags: 0, inBags: 0, inKg: 0, outBags: 0, outKg: 0, closeKg: 0, closeBags: 0, charge: 0, deposit: 0, balance: 0 };
+          const q = (this.clientSearchQuery || '').trim().toLowerCase();
+          const key = 'crangeTot_' + from + '_' + to + '_' + q;
+          return this._dcache(key, () => {
+            const rows = this.getClientRangeSummary();
+            return rows.reduce((t, r) => ({
+              openKg: t.openKg + r.openingStock.kg,
+              openBags: t.openBags + r.openingStock.bags,
+              inBags: t.inBags + r.inBags,
+              inKg: t.inKg + r.inKg,
+              outBags: t.outBags + r.outBags,
+              outKg: t.outKg + r.outKg,
+              closeKg: t.closeKg + r.closingStock.kg,
+              closeBags: t.closeBags + r.closingStock.bags,
+              charge: t.charge + r.totalCharge,
+              deposit: t.deposit + r.totalDeposit,
+              balance: t.balance + r.closingBalance
+            }), { openKg: 0, openBags: 0, inBags: 0, inKg: 0, outBags: 0, outKg: 0, closeKg: 0, closeBags: 0, charge: 0, deposit: 0, balance: 0 });
+          });
         },
 
         // Upsert ledger row: one row per client+date (PRD §8.2)
@@ -7437,26 +7649,31 @@ selectClient(clientId) {
         },
 
         savedPayments() {
-          return (this.payments || []).filter(p => !this.isTransferMethod(p))
-            .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+          return this._dcache('savedPay', () => {
+            return (this.payments || []).filter(p => !this.isTransferMethod(p))
+              .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+          });
         },
 
         getFilteredSavedPayments() {
-          let list = this.savedPayments();
-          const q = (this.savedSearchText || '').trim().toLowerCase();
-          if (q) {
-            list = list.filter(p => {
-              const c = this.getClientById(p.clientId);
-              const code = c ? (c.clientId || '').toLowerCase() : '';
-              const name = c ? (c.name || '').toLowerCase() : '';
-              const mobile = c ? (c.mobile || '').toLowerCase() : '';
-              const note = (p.note || '').toLowerCase();
-              return code.includes(q) || name.includes(q) || mobile.includes(q) || note.includes(q);
-            });
-          }
-          if (this.savedDateFrom) list = list.filter(p => p.date >= this.savedDateFrom);
-          if (this.savedDateTo) list = list.filter(p => p.date <= this.savedDateTo);
-          return list;
+          const key = 'fSavedPay_' + (this.savedSearchText || '').trim().toLowerCase() + '_' + (this.savedDateFrom || '') + '_' + (this.savedDateTo || '');
+          return this._dcache(key, () => {
+            let list = this.savedPayments();
+            const q = (this.savedSearchText || '').trim().toLowerCase();
+            if (q) {
+              list = list.filter(p => {
+                const c = this.getClientById(p.clientId);
+                const code = c ? (c.clientId || '').toLowerCase() : '';
+                const name = c ? (c.name || '').toLowerCase() : '';
+                const mobile = c ? (c.mobile || '').toLowerCase() : '';
+                const note = (p.note || '').toLowerCase();
+                return code.includes(q) || name.includes(q) || mobile.includes(q) || note.includes(q);
+              });
+            }
+            if (this.savedDateFrom) list = list.filter(p => p.date >= this.savedDateFrom);
+            if (this.savedDateTo) list = list.filter(p => p.date <= this.savedDateTo);
+            return list;
+          });
         },
 
         startPaymentRowEdit(p) {
@@ -8915,57 +9132,70 @@ this.rates.push(newRate);
           if (!this.requirePerm('settings')) return;
           if (confirm('এই দরের রেকর্ডটি মুছে ফেলবেন?')) {
             const rate = this.rates.find(r => r.id === id);
-this.rates = this.rates.filter(r => r.id !== id);
-             this.deleteFromFirestore('rates', rate.id);
-             this.recalculateAllClients();
-           }
+            if (!rate) return;
+            this.rates = this.rates.filter(r => r.id !== id);
+            this.recalculateAllClients();
+            this.deleteFromFirestore('rates', rate.id);
+          }
         },
 
         // Helper calculations
         getFilteredClients() {
-          return this.clients.filter(c => {
-            const matchesSearch = c.name.toLowerCase().includes(this.globalSearch.toLowerCase()) ||
-                                  c.clientId.toLowerCase().includes(this.globalSearch.toLowerCase()) ||
-                                  c.mobile.includes(this.globalSearch);
-            if (!matchesSearch) return false;
-            if (this.clientFilter === 'active') return c.status === 'active';
-            if (this.clientFilter === 'due') return c.runningBalance > 0;
-            return true;
+          const srch = (this.globalSearch || '').toLowerCase();
+          const flt = this.clientFilter || 'all';
+          return this._dcache('fcli_' + srch + '_' + flt, () => {
+            return this.clients.filter(c => {
+              const matchesSearch = c.name.toLowerCase().includes(srch) ||
+                                    c.clientId.toLowerCase().includes(srch) ||
+                                    c.mobile.includes(srch);
+              if (!matchesSearch) return false;
+              if (flt === 'active') return c.status === 'active';
+              if (flt === 'due') return c.runningBalance > 0;
+              return true;
+            });
           });
         },
 
         getTotalStock() {
-          return this.clients.reduce((acc, c) => {
-            acc.bags += (c.currentStock?.bags || 0);
-            acc.kg += (c.currentStock?.kg || 0);
-            return acc;
-          }, { bags: 0, kg: 0 });
+          return this._dcache('totalStock', () => {
+            return this.clients.reduce((acc, c) => {
+              acc.bags += (c.currentStock?.bags || 0);
+              acc.kg += (c.currentStock?.kg || 0);
+              return acc;
+            }, { bags: 0, kg: 0 });
+          });
         },
 
         getTotalDues() {
-          return this.clients.reduce((sum, c) => sum + (c.runningBalance || 0), 0);
+          return this._dcache('totalDues', () => {
+            return this.clients.reduce((sum, c) => sum + (c.runningBalance || 0), 0);
+          });
         },
 
         getRecentEntries() {
-          return this.ledgerEntries.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+          return this._dcache('recentEntries', () => {
+            return this.ledgerEntries.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+          });
         },
 
         getTopDebtors() {
-          return this.clients.slice().sort((a, b) => b.runningBalance - a.runningBalance).slice(0, 5);
+          return this._dcache('topDebtors', () => {
+            return this.clients.slice().sort((a, b) => b.runningBalance - a.runningBalance).slice(0, 5);
+          });
         },
 
         getClientName(id) {
-          const c = this.clients.find(x => x.id === id);
+          const c = this._clientIndex().get(id);
           return c ? c.name : 'Unknown';
         },
 
         getClientCode(id) {
-          const c = this.clients.find(x => x.id === id);
+          const c = this._clientIndex().get(id);
           return c ? c.clientId : '-';
         },
 
         getClientById(id) {
-          return this.clients.find(x => x.id === id) || null;
+          return this._clientIndex().get(id) || null;
         },
 
         getClientMonthlyRent(clientId, month) {
@@ -8978,12 +9208,16 @@ this.rates = this.rates.filter(r => r.id !== id);
 
         getGrandMonthlyRent(month) {
           month = month || this.masterLedgerMonth;
-          return this.clients.reduce((sum, c) => sum + (this.getMonthlyCharge(c.id, month) || 0), 0);
+          return this._dcache('gmr_' + month, () => {
+            return this.clients.reduce((sum, c) => sum + (this.getMonthlyCharge(c.id, month) || 0), 0);
+          });
         },
 
         getGrandTotalDeposit(month) {
           month = month || this.masterLedgerMonth;
-          return this.clients.reduce((sum, c) => sum + (this.getMonthlyDeposit(c.id, month) || 0), 0);
+          return this._dcache('gtd_' + month, () => {
+            return this.clients.reduce((sum, c) => sum + (this.getMonthlyDeposit(c.id, month) || 0), 0);
+          });
         },
 
         // ===== TREND / CHART HELPERS (Apple-style SVG bar charts) =====
@@ -9000,260 +9234,299 @@ this.rates = this.rates.filter(r => r.id !== id);
         },
 
         get dashboardTrend() {
-          const months = this.getTrendMonths();
-          const data = months.map(m => this.getMonthTrendData(m.key));
-          const maxVal = Math.max(...data.map(d => Math.max(d.charge, d.deposit)), 1);
-          return { months, data, maxVal };
+          return this._dcache('dashTrend', () => {
+            const months = this.getTrendMonths();
+            const data = months.map(m => this.getMonthTrendData(m.key));
+            const maxVal = Math.max(...data.map(d => Math.max(d.charge, d.deposit)), 1);
+            return { months, data, maxVal };
+          });
         },
         getMonthlyStockNet(monthKey) {
-          let bags = 0, kg = 0;
-          (this.ledgerEntries||[]).forEach(e => {
-            if ((e.date||'').slice(0,7)===monthKey) {
-              bags += (e.stockIn?.bags||0) - (e.delivery?.bags||0);
-              kg += (e.stockIn?.kg||0) - (e.delivery?.kg||0);
-            }
+          return this._dcache('msn_' + monthKey, () => {
+            let bags = 0, kg = 0;
+            (this.ledgerEntries || []).forEach(e => {
+              if ((e.date || '').slice(0, 7) === monthKey) {
+                bags += (e.stockIn?.bags || 0) - (e.delivery?.bags || 0);
+                kg += (e.stockIn?.kg || 0) - (e.delivery?.kg || 0);
+              }
+            });
+            return { bags, kg };
           });
-          return { bags, kg };
         },
         get dashboardStockCurrent() {
-          const curKey = new Date().toISOString().slice(0,7);
-          const curNet = this.getMonthlyStockNet(curKey);
-          const total = this.getTotalStock();
-          const maxStock = Math.max(total.bags, total.kg, 1);
-          return { curKey, curNet, total, maxStock, monthLabel: this.bnMonthInfo(curKey).monthName + ' ' + this.bnMonthInfo(curKey).yearDisplay };
+          return this._dcache('dashStockCur', () => {
+            const curKey = new Date().toISOString().slice(0, 7);
+            const curNet = this.getMonthlyStockNet(curKey);
+            const total = this.getTotalStock();
+            const maxStock = Math.max(total.bags, total.kg, 1);
+            return { curKey, curNet, total, maxStock, monthLabel: this.bnMonthInfo(curKey).monthName + ' ' + this.bnMonthInfo(curKey).yearDisplay };
+          });
         },
         get dashboardStockPrev() {
-          const now = new Date();
-          const curKey = now.toISOString().slice(0,7);
-          const prev = new Date(now.getFullYear(), now.getMonth()-1, 1);
-          const prevKey = prev.getFullYear() + '-' + String(prev.getMonth()+1).padStart(2,'0');
-          const curNet = this.getMonthlyStockNet(curKey);
-          const prevNet = this.getMonthlyStockNet(prevKey);
-          const bagChange = curNet.bags - prevNet.bags;
-          const kgChange = curNet.kg - prevNet.kg;
-          const maxPrev = Math.max(Math.abs(prevNet.bags), Math.abs(curNet.bags), Math.abs(prevNet.kg), Math.abs(curNet.kg), 1);
-          return { curKey, prevKey, curNet, prevNet, bagChange, kgChange, maxPrev, bagUp: bagChange>=0, kgUp: kgChange>=0, curLabel: this.bnMonthInfo(curKey).monthName, prevLabel: this.bnMonthInfo(prevKey).monthName };
+          return this._dcache('dashStockPrev', () => {
+            const now = new Date();
+            const curKey = now.toISOString().slice(0, 7);
+            const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const prevKey = prev.getFullYear() + '-' + String(prev.getMonth() + 1).padStart(2, '0');
+            const curNet = this.getMonthlyStockNet(curKey);
+            const prevNet = this.getMonthlyStockNet(prevKey);
+            const bagChange = curNet.bags - prevNet.bags;
+            const kgChange = curNet.kg - prevNet.kg;
+            const maxPrev = Math.max(Math.abs(prevNet.bags), Math.abs(curNet.bags), Math.abs(prevNet.kg), Math.abs(curNet.kg), 1);
+            return { curKey, prevKey, curNet, prevNet, bagChange, kgChange, maxPrev, bagUp: bagChange >= 0, kgUp: kgChange >= 0, curLabel: this.bnMonthInfo(curKey).monthName, prevLabel: this.bnMonthInfo(prevKey).monthName };
+          });
         },
 
         get dashboardStockMarketTrend() {
-          const months = this.getTrendMonths();
-          const curTotal = this.getTotalStock().bags;
-          const nets = months.map(m => this.getMonthlyStockNet(m.key).bags);
-          // stock at each month end = curTotal - sum of nets after that month
-          const stockAt = [];
-          let sumAfter = 0;
-          for (let i = months.length - 1; i >= 0; i--) {
-            if (i === months.length - 1) stockAt[i] = curTotal;
-            else { sumAfter += nets[i + 1]; stockAt[i] = curTotal - sumAfter; }
-          }
-          const max = Math.max(...stockAt, 1);
-          const min = Math.min(...stockAt, 0);
-          const range = max - min || 1;
-          // SVG path for line chart 200x80
-          const w = 200, h = 80, step = w / (stockAt.length - 1 || 1);
-          let path = '', areaPath = '';
-          stockAt.forEach((v, i) => {
-            const x = i * step;
-            const y = h - ((v - min) / range) * h;
-            if (i === 0) { path += `M ${x} ${y}`; areaPath += `M ${x} ${h} L ${x} ${y}`; }
-            else { path += ` L ${x} ${y}`; areaPath += ` L ${x} ${y}`; }
+          return this._dcache('dashMarketTrend', () => {
+            const months = this.getTrendMonths();
+            const curTotal = this.getTotalStock().bags;
+            const nets = months.map(m => this.getMonthlyStockNet(m.key).bags);
+            // stock at each month end = curTotal - sum of nets after that month
+            const stockAt = [];
+            let sumAfter = 0;
+            for (let i = months.length - 1; i >= 0; i--) {
+              if (i === months.length - 1) stockAt[i] = curTotal;
+              else { sumAfter += nets[i + 1]; stockAt[i] = curTotal - sumAfter; }
+            }
+            const max = Math.max(...stockAt, 1);
+            const min = Math.min(...stockAt, 0);
+            const range = max - min || 1;
+            // SVG path for line chart 200x80
+            const w = 200, h = 80, step = w / (stockAt.length - 1 || 1);
+            let path = '', areaPath = '';
+            stockAt.forEach((v, i) => {
+              const x = i * step;
+              const y = h - ((v - min) / range) * h;
+              if (i === 0) { path += `M ${x} ${y}`; areaPath += `M ${x} ${h} L ${x} ${y}`; }
+              else { path += ` L ${x} ${y}`; areaPath += ` L ${x} ${y}`; }
+            });
+            areaPath += (areaPath ? ` L ${w} ${h} Z` : '');
+            const first = stockAt[0] || 0, last = stockAt[stockAt.length - 1] || 0;
+            const up = last >= first;
+            return { months, stockAt, max, min, path, areaPath, up };
           });
-          areaPath += (areaPath ? ` L ${w} ${h} Z` : '');
-          const first = stockAt[0] || 0, last = stockAt[stockAt.length - 1] || 0;
-          const up = last >= first;
-          return { months, stockAt, max, min, path, areaPath, up };
         },
         get dashboardRentStock() {
-          const period = parseInt(this.dashboardRentPeriod||'12');
-          const now = new Date();
-          const months = [];
-          for(let i=period-1;i>=0;i--) {
-            const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-            const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-            const label = d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
-            months.push({key, label, date:d});
-          }
-          let raw = months.map(m => this.getMonthTrendData(m.key).charge);
-          // রিয়েল ডেটা — ০ মাস বাদ, সরাসরি ব্যবহার, কোনো স্মুথিং না
-          const data = raw.map(v => Math.max(0, Number(v)||0));
-          const cur = data[data.length-1]||0, prev = data[data.length-2]||0;
-          const change = cur - prev, pct = prev ? (change/prev*100) : 0;
-          // রিয়েল লজিক: Market Cap = মোট বকেয়া, P/E = মোট ভাড়া / মোট ক্লায়েন্ট, Beta = ভাড়ার ভোলাটিলিটি
-          const totalDue = this.getTotalDues();
-          const marketCap = totalDue > 0 ? totalDue : data.reduce((s,v)=>s+v,0);
-          const avgRent = data.length ? (data.reduce((s,v)=>s+v,0)/data.length) : 0;
-          const perVal = avgRent ? (marketCap/avgRent).toFixed(2) : '16.77';
-          const variance = data.length>1 ? Math.sqrt(data.reduce((s,v)=>s+Math.pow(v-avgRent,2),0)/data.length) : 0;
-          const betaVal = avgRent ? (1 + (variance/avgRent)*2).toFixed(2) : '1.21';
-          // y স্কেল রিয়েল রেঞ্জে — 0 থেকে নয়, ডেটার min/max থেকে
-          const yMinRaw = Math.min(...data), yMaxRaw = Math.max(...data);
-          const pad = (yMaxRaw - yMinRaw) * 0.15 || 50;
-          const yMin = Math.max(0, Math.floor((yMinRaw - pad)/50)*50);
-          const yMax = Math.ceil((yMaxRaw + pad)/50)*50;
-          const w=800, h=180, padL=45, padR=15, padT=15, padB=30;
-          const step = (w - padL - padR) / (data.length-1 || 1);
-          let path='', area='';
-          data.forEach((v,i)=>{
-            const x = padL + i*step;
-            const y = padT + (1 - (v - yMin)/(yMax - yMin || 1))* (h - padT - padB);
-            if(i===0){ path+=`M ${x} ${y}`; area+=`M ${x} ${h-padB} L ${x} ${y}`; } else { path+=` L ${x} ${y}`; area+=` L ${x} ${y}`; }
+          const period = parseInt(this.dashboardRentPeriod || '12');
+          return this._dcache('dashRent_' + period, () => {
+            const now = new Date();
+            const months = [];
+            for (let i = period - 1; i >= 0; i--) {
+              const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+              const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+              const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+              months.push({ key, label, date: d });
+            }
+            let raw = months.map(m => this.getMonthTrendData(m.key).charge);
+            // রিয়েল ডেটা — ০ মাস বাদ, সরাসরি ব্যবহার, কোনো স্মুথিং না
+            const data = raw.map(v => Math.max(0, Number(v) || 0));
+            const cur = data[data.length - 1] || 0, prev = data[data.length - 2] || 0;
+            const change = cur - prev, pct = prev ? (change / prev * 100) : 0;
+            // রিয়েল লজিক: Market Cap = মোট বকেয়া, P/E = মোট ভাড়া / মোট ক্লায়েন্ট, Beta = ভাড়ার ভোলাটিলিটি
+            const totalDue = this.getTotalDues();
+            const marketCap = totalDue > 0 ? totalDue : data.reduce((s, v) => s + v, 0);
+            const avgRent = data.length ? (data.reduce((s, v) => s + v, 0) / data.length) : 0;
+            const perVal = avgRent ? (marketCap / avgRent).toFixed(2) : '16.77';
+            const variance = data.length > 1 ? Math.sqrt(data.reduce((s, v) => s + Math.pow(v - avgRent, 2), 0) / data.length) : 0;
+            const betaVal = avgRent ? (1 + (variance / avgRent) * 2).toFixed(2) : '1.21';
+            // y স্কেল রিয়েল রেঞ্জে — 0 থেকে নয়, ডেটার min/max থেকে
+            const yMinRaw = Math.min(...data), yMaxRaw = Math.max(...data);
+            const pad = (yMaxRaw - yMinRaw) * 0.15 || 50;
+            const yMin = Math.max(0, Math.floor((yMinRaw - pad) / 50) * 50);
+            const yMax = Math.ceil((yMaxRaw + pad) / 50) * 50;
+            const w = 800, h = 180, padL = 45, padR = 15, padT = 15, padB = 30;
+            const step = (w - padL - padR) / (data.length - 1 || 1);
+            let path = '', area = '';
+            data.forEach((v, i) => {
+              const x = padL + i * step;
+              const y = padT + (1 - (v - yMin) / (yMax - yMin || 1)) * (h - padT - padB);
+              if (i === 0) { path += `M ${x} ${y}`; area += `M ${x} ${h - padB} L ${x} ${y}`; } else { path += ` L ${x} ${y}`; area += ` L ${x} ${y}`; }
+            });
+            area += ` L ${padL + (data.length - 1) * step} ${h - padB} L ${padL} ${h - padB} Z`;
+            // টেবিল — রিয়েল Open/High/Low, ছোট রেঞ্জে
+            const tableRows = months.slice(-4).map((m, i) => {
+              const idx = months.length - 4 + i;
+              const close = data[idx] || cur;
+              const open = idx > 0 ? data[idx - 1] : close;
+              const spread = Math.max(2, Math.abs(close - open) * 0.3 + 1.5);
+              const high = Math.max(close, open) + Math.random() * spread * 0.4;
+              const low = Math.min(close, open) - Math.random() * spread * 0.4;
+              const vol = 25000000 + Math.round(Math.random() * 8000000) + (i === 1 ? 15000000 : 0);
+              const up = close >= open;
+              return { date: m.label, open: open.toFixed(2), high: high.toFixed(2), low: low.toFixed(2), close: close.toFixed(2), volume: vol.toLocaleString('en-US'), up };
+            });
+            return { months, data, cur, change, pct, marketCap, perVal, betaVal, path, area, tableRows, yMax, yMin };
           });
-          area+=` L ${padL + (data.length-1)*step} ${h-padB} L ${padL} ${h-padB} Z`;
-          // টেবিল — রিয়েল Open/High/Low, ছোট রেঞ্জে
-          const tableRows = months.slice(-4).map((m,i)=>{
-            const idx = months.length-4+i;
-            const close = data[idx]||cur;
-            const open = idx>0 ? data[idx-1] : close;
-            const spread = Math.max(2, Math.abs(close-open)*0.3 + 1.5);
-            const high = Math.max(close, open) + Math.random()*spread*0.4;
-            const low = Math.min(close, open) - Math.random()*spread*0.4;
-            const vol = 25000000 + Math.round(Math.random()*8000000) + (i===1?15000000:0);
-            const up = close >= open;
-            return { date: m.label, open: open.toFixed(2), high: high.toFixed(2), low: low.toFixed(2), close: close.toFixed(2), volume: vol.toLocaleString('en-US'), up };
-          });
-          return { months, data, cur, change, pct, marketCap, perVal, betaVal, path, area, tableRows, yMax, yMin };
         },
         get dashboardStockMarketPrevPath() {
-          // For prev comparison: 2 points prev vs current
-          const cur = this.dashboardStockPrev;
-          const vals = [cur.prevNet.bags, cur.curNet.bags];
-          const max = Math.max(...vals.map(v=>Math.abs(v)), 1);
-          const min = Math.min(...vals, 0);
-          const range = (max - min) || 1;
-          const w = 200, h = 60;
-          let path = '';
-          vals.forEach((v,i)=>{
-            const x = i===0 ? 20 : w-20;
-            const y = h - ((v - min)/range)*h;
-            if(i===0) path+=`M ${x} ${y}`; else path+=` L ${x} ${y}`;
+          return this._dcache('dashStockPrevPath', () => {
+            // For prev comparison: 2 points prev vs current
+            const cur = this.dashboardStockPrev;
+            const vals = [cur.prevNet.bags, cur.curNet.bags];
+            const max = Math.max(...vals.map(v => Math.abs(v)), 1);
+            const min = Math.min(...vals, 0);
+            const range = (max - min) || 1;
+            const w = 200, h = 60;
+            let path = '';
+            vals.forEach((v, i) => {
+              const x = i === 0 ? 20 : w - 20;
+              const y = h - ((v - min) / range) * h;
+              if (i === 0) path += `M ${x} ${y}`; else path += ` L ${x} ${y}`;
+            });
+            return { path, up: cur.bagUp };
           });
-          return { path, up: cur.bagUp };
         },
         get dashboardHistogramBars() {
-          const sel = this.dashboardSelectedMonth || new Date().toISOString().slice(0,7);
-          const map = {};
-          (this.ledgerEntries||[]).forEach(e => {
-            const d = (e.date||'').slice(0,10);
-            if (!d || !d.startsWith(sel)) return;
-            if (!map[d]) map[d] = { date:d, label: (d.slice(5,7).replace(/^0/,'') + '/' + d.slice(8,10).replace(/^0/,'') + '/' + d.slice(0,4)), bags:0 };
-            map[d].bags += (e.stockIn?.bags||0) + (e.delivery?.bags||0);
-            if (map[d].bags===0 && e.stockIn?.kg) map[d].bags = Math.round((e.stockIn.kg||0)/2);
+          const sel = this.dashboardSelectedMonth || new Date().toISOString().slice(0, 7);
+          return this._dcache('dashHist_' + sel, () => {
+            const map = {};
+            (this.ledgerEntries || []).forEach(e => {
+              const d = (e.date || '').slice(0, 10);
+              if (!d || !d.startsWith(sel)) return;
+              if (!map[d]) map[d] = { date: d, label: (d.slice(5, 7).replace(/^0/, '') + '/' + d.slice(8, 10).replace(/^0/, '') + '/' + d.slice(0, 4)), bags: 0 };
+              map[d].bags += (e.stockIn?.bags || 0) + (e.delivery?.bags || 0);
+              if (map[d].bags === 0 && e.stockIn?.kg) map[d].bags = Math.round((e.stockIn.kg || 0) / 2);
+            });
+            const arr = Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+            if (arr.length === 0) return [];
+            return arr.slice(-35).map(a => ({ date: a.date, label: a.label, bags: Math.max(12, Math.round(a.bags || 0)) }));
           });
-          const arr = Object.values(map).sort((a,b)=>a.date.localeCompare(b.date));
-          if (arr.length === 0) return [];
-          return arr.slice(-35).map(a=>({date:a.date, label: a.label, bags: Math.max(12, Math.round(a.bags||0))}));
         },
-        get dashboardHistogramMax() { return Math.max(...this.dashboardHistogramBars.map(d=>d.bags), 100); },
+        get dashboardHistogramMax() {
+          const sel = this.dashboardSelectedMonth || new Date().toISOString().slice(0, 7);
+          return this._dcache('dashHistMax_' + sel, () => Math.max(...this.dashboardHistogramBars.map(d => d.bags), 100));
+        },
         get dashboardHistogramSvg() {
-          const bars = this.dashboardHistogramBars;
-          const n = bars.length || 1;
-          const max = this.dashboardHistogramMax;
-          let html = '';
-          bars.forEach((d, i) => {
-            const x = 30 + i * (380/n) + 1;
-            const w = Math.max(380/n - 1.5, 1.5);
-            const h = Math.max(pctOf(d.bags, max) * 1.0, 2);
-            const y = 125 - h;
-            html += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#6a9e8e" rx="1"></rect>`;
+          const sel = this.dashboardSelectedMonth || new Date().toISOString().slice(0, 7);
+          return this._dcache('dashHistSvg_' + sel, () => {
+            const bars = this.dashboardHistogramBars;
+            const n = bars.length || 1;
+            const max = this.dashboardHistogramMax;
+            let html = '';
+            bars.forEach((d, i) => {
+              const x = 30 + i * (380 / n) + 1;
+              const w = Math.max(380 / n - 1.5, 1.5);
+              const h = Math.max(pctOf(d.bags, max) * 1.0, 2);
+              const y = 125 - h;
+              html += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#6a9e8e" rx="1"></rect>`;
+            });
+            return html;
           });
-          return html;
         },
         get dashboardPieData() {
-          // রিয়েল ডেটা — টপ ৩ ক্লায়েন্ট + অন্যান্য
-          const sorted = [...this.clients].sort((a,b)=>(b.currentStock?.bags||0)-(a.currentStock?.bags||0));
-          const totalBags = this.getTotalStock().bags || 1;
-          let vals = [];
-          if (sorted.length===0 || totalBags===0) return [];
-          if (sorted.length <= 4) {
-            vals = sorted.map((c,i)=>({label: c.name || c.clientId, pct: ((c.currentStock?.bags||0)/totalBags*100), color: ['#0f4d3f','#3a8a6a','#7fb3a0','#b8d8cc'][i%4]}));
-          } else {
-            const top3 = sorted.slice(0,3);
-            const othersBags = sorted.slice(3).reduce((s,c)=>s+(c.currentStock?.bags||0),0);
-            vals = [
-              ...top3.map((c,i)=>({label: c.name || c.clientId, pct: ((c.currentStock?.bags||0)/totalBags*100), color: ['#0f4d3f','#3a8a6a','#7fb3a0'][i]})),
-              {label:'অন্যান্য', pct: (othersBags/totalBags*100), color:'#b8d8cc'}
-            ];
-          }
-          vals = vals.filter(v=>v.pct>0.5);
-          const sumPct = vals.reduce((s,v)=>s+v.pct,0);
-          vals = vals.map(v=>({...v, pct: v.pct/sumPct*100}));
-          let start = -90;
-          return vals.map(v=>{
-            const pct = Math.round(v.pct*10)/10;
-            const angle = pct/100*360;
-            const end = start + angle;
-            const large = angle>180?1:0;
-            const x1 = 60 + 48*Math.cos(start*Math.PI/180);
-            const y1 = 60 + 48*Math.sin(start*Math.PI/180);
-            const x2 = 60 + 48*Math.cos(end*Math.PI/180);
-            const y2 = 60 + 48*Math.sin(end*Math.PI/180);
-            const path = `M 60 60 L ${x1} ${y1} A 48 48 0 ${large} 1 ${x2} ${y2} Z`;
-            const mid = start + angle/2;
-            const lx = 60 + 68*Math.cos(mid*Math.PI/180);
-            const ly = 60 + 68*Math.sin(mid*Math.PI/180);
-            start = end;
-            return {...v, pct: pct.toFixed(1)+'%', path, lx, ly, lineW:18, color:v.color};
+          return this._dcache('dashPie', () => {
+            // রিয়েল ডেটা — টপ ৩ ক্লায়েন্ট + অন্যান্য
+            const sorted = [...this.clients].sort((a, b) => (b.currentStock?.bags || 0) - (a.currentStock?.bags || 0));
+            const totalBags = this.getTotalStock().bags || 1;
+            let vals = [];
+            if (sorted.length === 0 || totalBags === 0) return [];
+            if (sorted.length <= 4) {
+              vals = sorted.map((c, i) => ({ label: c.name || c.clientId, pct: ((c.currentStock?.bags || 0) / totalBags * 100), color: ['#0f4d3f', '#3a8a6a', '#7fb3a0', '#b8d8cc'][i % 4] }));
+            } else {
+              const top3 = sorted.slice(0, 3);
+              const othersBags = sorted.slice(3).reduce((s, c) => s + (c.currentStock?.bags || 0), 0);
+              vals = [
+                ...top3.map((c, i) => ({ label: c.name || c.clientId, pct: ((c.currentStock?.bags || 0) / totalBags * 100), color: ['#0f4d3f', '#3a8a6a', '#7fb3a0'][i] })),
+                { label: 'অন্যান্য', pct: (othersBags / totalBags * 100), color: '#b8d8cc' }
+              ];
+            }
+            vals = vals.filter(v => v.pct > 0.5);
+            const sumPct = vals.reduce((s, v) => s + v.pct, 0);
+            vals = vals.map(v => ({ ...v, pct: v.pct / sumPct * 100 }));
+            let start = -90;
+            return vals.map(v => {
+              const pct = Math.round(v.pct * 10) / 10;
+              const angle = pct / 100 * 360;
+              const end = start + angle;
+              const large = angle > 180 ? 1 : 0;
+              const x1 = 60 + 48 * Math.cos(start * Math.PI / 180);
+              const y1 = 60 + 48 * Math.sin(start * Math.PI / 180);
+              const x2 = 60 + 48 * Math.cos(end * Math.PI / 180);
+              const y2 = 60 + 48 * Math.sin(end * Math.PI / 180);
+              const path = `M 60 60 L ${x1} ${y1} A 48 48 0 ${large} 1 ${x2} ${y2} Z`;
+              const mid = start + angle / 2;
+              const lx = 60 + 68 * Math.cos(mid * Math.PI / 180);
+              const ly = 60 + 68 * Math.sin(mid * Math.PI / 180);
+              start = end;
+              return { ...v, pct: pct.toFixed(1) + '%', path, lx, ly, lineW: 18, color: v.color };
+            });
           });
         },
         get dashboardPieSvg() {
-          return (this.dashboardPieData || []).map(s =>
-            `<path d="${s.path}" fill="${s.color}" stroke="white" stroke-width="0.5"></path>`
-          ).join('');
+          return this._dcache('dashPieSvg', () => {
+            return (this.dashboardPieData || []).map(s =>
+              `<path d="${s.path}" fill="${s.color}" stroke="white" stroke-width="0.5"></path>`
+            ).join('');
+          });
         },
-        get dashboardLineBagsLabels() { return this.dashboardHistogramBars.slice(-35); },
+        get dashboardLineBagsLabels() { return this.dashboardHistogramBars; },
         get dashboardLineBagsPath() {
-          const data = this.dashboardHistogramBars.slice(-35).map(d=>d.bags);
-          const max = Math.max(...data, 8);
-          const min = 0;
-          const w=380, h=100, x0=30;
-          let p='';
-          data.forEach((v,i)=>{
-            const x = x0 + i*(w/data.length) + (w/data.length)/2;
-            const y = 15 + (1 - (v-min)/(max-min))*100;
-            if(i===0) p+=`M ${x} ${y}`; else p+=` L ${x} ${y}`;
+          const sel = this.dashboardSelectedMonth || new Date().toISOString().slice(0, 7);
+          return this._dcache('dashLineBags_' + sel, () => {
+            const data = this.dashboardHistogramBars.slice(-35).map(d => d.bags);
+            const max = Math.max(...data, 8);
+            const min = 0;
+            const w = 380, h = 100, x0 = 30;
+            let p = '';
+            data.forEach((v, i) => {
+              const x = x0 + i * (w / data.length) + (w / data.length) / 2;
+              const y = 15 + (1 - (v - min) / (max - min)) * 100;
+              if (i === 0) p += `M ${x} ${y}`; else p += ` L ${x} ${y}`;
+            });
+            return p;
           });
-          return p;
         },
-        get dashboardLineKgLabels() { return this.dashboardHistogramBars.slice(-35); },
+        get dashboardLineKgLabels() { return this.dashboardHistogramBars; },
         get dashboardLineKgPath() {
-          const data = this.dashboardHistogramBars.slice(-35).map(d=> (d.bags*0.6 + 20 + Math.sin(d.bags)*10));
-          const max = 12, min = 8;
-          const w=380, h=100, x0=30;
-          let p='';
-          data.forEach((v,i)=>{
-            const x = x0 + i*(w/data.length) + (w/data.length)/2;
-            const y = 15 + (1 - (v-min)/(max-min))*100;
-            if(i===0) p+=`M ${x} ${y}`; else p+=` L ${x} ${y}`;
+          const sel = this.dashboardSelectedMonth || new Date().toISOString().slice(0, 7);
+          return this._dcache('dashLineKg_' + sel, () => {
+            const data = this.dashboardHistogramBars.slice(-35).map(d => (d.bags * 0.6 + 20 + Math.sin(d.bags) * 10));
+            const max = 12, min = 8;
+            const w = 380, h = 100, x0 = 30;
+            let p = '';
+            data.forEach((v, i) => {
+              const x = x0 + i * (w / data.length) + (w / data.length) / 2;
+              const y = 15 + (1 - (v - min) / (max - min)) * 100;
+              if (i === 0) p += `M ${x} ${y}`; else p += ` L ${x} ${y}`;
+            });
+            return p;
           });
-          return p;
         },
         get dashboardAreaKgPath() {
-          const data = this.dashboardHistogramBars.slice(-35).map(d=> (d.bags*0.04 + 9 + Math.sin(d.bags*0.5)*0.8));
-          const max = 12, min = 8;
-          const w=380, h=100, x0=30;
-          let p='';
-          let area='';
-          data.forEach((v,i)=>{
-            const x = x0 + i*(w/data.length) + (w/data.length)/2;
-            const y = 15 + (1 - (v-min)/(max-min))*100;
-            if(i===0) { p+=`M ${x} ${y}`; area+=`M ${x} 115 L ${x} ${y}`; } else { p+=` L ${x} ${y}`; area+=` L ${x} ${y}`; }
+          const sel = this.dashboardSelectedMonth || new Date().toISOString().slice(0, 7);
+          return this._dcache('dashAreaKg_' + sel, () => {
+            const data = this.dashboardHistogramBars.slice(-35).map(d => (d.bags * 0.04 + 9 + Math.sin(d.bags * 0.5) * 0.8));
+            const max = 12, min = 8;
+            const w = 380, h = 100, x0 = 30;
+            let p = '';
+            let area = '';
+            data.forEach((v, i) => {
+              const x = x0 + i * (w / data.length) + (w / data.length) / 2;
+              const y = 15 + (1 - (v - min) / (max - min)) * 100;
+              if (i === 0) { p += `M ${x} ${y}`; area += `M ${x} 115 L ${x} ${y}`; } else { p += ` L ${x} ${y}`; area += ` L ${x} ${y}`; }
+            });
+            area += (area ? ` L ${x0 + w} 115 Z` : '');
+            return area;
           });
-          area+= (area ? ` L ${x0 + w} 115 Z` : '');
-          return area;
         },
         getMonthTrendData(monthKey) {
-          const charge = this.getGrandMonthlyRent(monthKey);
-          const deposit = this.getGrandTotalDeposit(monthKey);
-          return { charge, deposit, netDue: Math.max(0, charge - deposit) };
+          return this._dcache('mt_' + monthKey, () => {
+            const charge = this.getGrandMonthlyRent(monthKey);
+            const deposit = this.getGrandTotalDeposit(monthKey);
+            return { charge, deposit, netDue: Math.max(0, charge - deposit) };
+          });
         },
 
         getTrendMax() {
-          const values = this.getTrendMonths().map(m => this.getMonthTrendData(m.key));
-          return Math.max(...values.map(d => Math.max(d.charge, d.deposit)), 1);
+          return this._dcache('trendMax', () => {
+            const values = this.getTrendMonths().map(m => this.getMonthTrendData(m.key));
+            return Math.max(...values.map(d => Math.max(d.charge, d.deposit)), 1);
+          });
         },
 
         getMaxDueAmount() {
-          return Math.max(...this.clients.map(c => c.runningBalance || 0), 1);
+          return this._dcache('maxDue', () => Math.max(...this.clients.map(c => c.runningBalance || 0), 1));
         },
 
         pctOf(value, max) {
@@ -9261,17 +9534,19 @@ this.rates = this.rates.filter(r => r.id !== id);
         },
 
         getPaymentMethodSummary() {
-          const summary = { cash: 0, bkash: 0, bank: 0 };
-          this.payments.forEach(p => {
-            const key = (p.method || 'cash').toLowerCase();
-            if (summary[key] === undefined) summary[key] = 0;
-            summary[key] += Number(p.amount) || 0;
+          return this._dcache('paySum', () => {
+            const summary = { cash: 0, bkash: 0, bank: 0 };
+            this.payments.forEach(p => {
+              const key = (p.method || 'cash').toLowerCase();
+              if (summary[key] === undefined) summary[key] = 0;
+              summary[key] += Number(p.amount) || 0;
+            });
+            return Object.keys(summary).map(k => ({ method: k, amount: summary[k] }));
           });
-          return Object.keys(summary).map(k => ({ method: k, amount: summary[k] }));
         },
 
         getPaymentMethodMax() {
-          return Math.max(...this.getPaymentMethodSummary().map(p => p.amount), 1);
+          return this._dcache('payMax', () => Math.max(...this.getPaymentMethodSummary().map(p => p.amount), 1));
         },
 
         getMonthName(dateStr) {
@@ -9395,91 +9670,102 @@ this.rates = this.rates.filter(r => r.id !== id);
           if (l && l.numberLang === 'bn') return this.toBnDigits(s);
           return s;
         },
-        masterMonthlyKaifiyat(clientId, month) {
-          return (this.payments || [])
-            .filter(p => !this.isTransferMethod(p) && p.clientId === clientId && (p.date || '').slice(0, 7) === month)
-            .reduce((s, p) => s + (Number(p.kaifiyat) || 0), 0);
+        masterPaymentStats(clientId, month) {
+          if (this._memoCache['mp_' + clientId + '_' + month] !== undefined) return this._memoCache['mp_' + clientId + '_' + month];
+          const r = { kaifiyat: 0, deposit: 0, charge: 0, transferOut: 0 };
+          (this._paymentsIndex().get(clientId) || []).forEach(p => {
+            if ((p.date || '').slice(0, 7) !== month) return;
+            const amt = Math.abs(Number(p.amount) || 0);
+            if (p.method === 'transfer_out') r.transferOut += amt;
+            else if (this.isTransferMethod(p)) return;
+            else {
+              r.kaifiyat += Number(p.kaifiyat) || 0;
+              r.deposit += Number(p.amount) || 0;
+              r.charge += Number(p.charge) || 0;
+            }
+          });
+          return this._setMemo('mp_' + clientId + '_' + month, r, clientId);
         },
-        masterMonthlyDeposit(clientId, month) {
-          return (this.payments || [])
-            .filter(p => !this.isTransferMethod(p) && p.clientId === clientId && (p.date || '').slice(0, 7) === month)
-            .reduce((s, p) => s + (Number(p.amount) || 0), 0);
-        },
+        masterMonthlyKaifiyat(clientId, month) { return this.masterPaymentStats(clientId, month).kaifiyat; },
+        masterMonthlyDeposit(clientId, month) { return this.masterPaymentStats(clientId, month).deposit; },
         // মাসের মোট "চার্জ" — টাকা জমা রেজিস্টারের মাসিক চার্জ (charge) ফিল্ড
-        masterMonthlyCharge(clientId, month) {
-          return (this.payments || [])
-            .filter(p => !this.isTransferMethod(p) && p.clientId === clientId && (p.date || '').slice(0, 7) === month)
-            .reduce((s, p) => s + (Number(p.charge) || 0), 0);
-        },
+        masterMonthlyCharge(clientId, month) { return this.masterPaymentStats(clientId, month).charge; },
         // মাসের মোট "টাকা ট্রান্সফার (OUT)" — এই ক্লায়েন্ট থেকে অন্য ক্লায়েন্টে যে টাকা গেছে
-        masterMonthlyTransferOut(clientId, month) {
-          return (this.payments || [])
-            .filter(p => (p.method === 'transfer_out') && p.clientId === clientId && (p.date || '').slice(0, 7) === month)
-            .reduce((s, p) => s + Math.abs(Number(p.amount) || 0), 0);
-        },
+        masterMonthlyTransferOut(clientId, month) { return this.masterPaymentStats(clientId, month).transferOut; },
         masterSummaryRows() {
           const q = (this.masterSummarySearch || '').trim().toLowerCase();
-          const base = this.clients
-            .filter(c => !q ||
-              (c.name || '').toLowerCase().includes(q) ||
-              (c.address || '').toLowerCase().includes(q))
-            .map(c => {
-              const bags = Number(c.currentStock?.bags) || 0;
-              const kg = Number(c.currentStock?.kg) || 0;
-              return {
-                clientId: c.clientId || '',
-                name: c.name || '',
-                address: c.address || '',
-                mobile: c.mobile || '',
-                bags,
-                kg,
-                monthlyBill: this.getMonthlyCharge(c.id, this.masterSummaryMonth) || 0,
-                monthlyDeposit: this.masterMonthlyDeposit(c.id, this.masterSummaryMonth) || 0,
-                adjustment: this.masterMonthlyKaifiyat(c.id, this.masterSummaryMonth) || 0,
-                chargeCash: this.masterMonthlyCharge(c.id, this.masterSummaryMonth) || 0,
-                transferOut: this.masterMonthlyTransferOut(c.id, this.masterSummaryMonth) || 0,
-                total: Number(c.runningBalance) || 0,
-                highlight: bags === 0 && kg === 0
-              };
-            })
-            // যাদের সবকিছু 00 (বস্তা/কেজি/বিল/জমা/কৈফিয়ৎ/মোট) তাদের লুকাও — কোনো একটায় মান থাকলে দেখাও
-            .filter(r => !(r.bags === 0 && r.kg === 0 && r.monthlyBill === 0 && r.monthlyDeposit === 0 && r.adjustment === 0 && r.chargeCash === 0 && r.transferOut === 0 && r.total === 0));
-          return base.map((r, idx) => ({ ...r, id: idx + 1 }));
+          return this._dcache('msrows_' + q + '_' + this.masterSummaryMonth, () => {
+            const base = this.clients
+              .filter(c => !q ||
+                (c.name || '').toLowerCase().includes(q) ||
+                (c.address || '').toLowerCase().includes(q))
+              .map(c => {
+                const bags = Number(c.currentStock?.bags) || 0;
+                const kg = Number(c.currentStock?.kg) || 0;
+                const ps = this.masterPaymentStats(c.id, this.masterSummaryMonth);
+                return {
+                  clientId: c.clientId || '',
+                  name: c.name || '',
+                  address: c.address || '',
+                  mobile: c.mobile || '',
+                  bags,
+                  kg,
+                  monthlyBill: this.getMonthlyCharge(c.id, this.masterSummaryMonth) || 0,
+                  monthlyDeposit: ps.deposit || 0,
+                  adjustment: ps.kaifiyat || 0,
+                  chargeCash: ps.charge || 0,
+                  transferOut: ps.transferOut || 0,
+                  total: Number(c.runningBalance) || 0,
+                  highlight: bags === 0 && kg === 0
+                };
+              })
+              // যাদের সবকিছু 00 (বস্তা/কেজি/বিল/জমা/কৈফিয়ৎ/মোট) তাদের লুকাও — কোনো একটায় মান থাকলে দেখাও
+              .filter(r => !(r.bags === 0 && r.kg === 0 && r.monthlyBill === 0 && r.monthlyDeposit === 0 && r.adjustment === 0 && r.chargeCash === 0 && r.transferOut === 0 && r.total === 0));
+            return base.map((r, idx) => ({ ...r, id: idx + 1 }));
+          });
         },
         masterSummaryTotals() {
-          const list = this.masterSummaryRows();
-          const t = { customers: list.length, bags: 0, kg: 0, bill: 0, deposit: 0, adjust: 0, charge: 0, transfer: 0, grand: 0 };
-          list.forEach(r => {
-            t.bags += r.bags;
-            t.kg += r.kg;
-            t.bill += r.monthlyBill;
-            t.deposit += r.monthlyDeposit;
-            t.adjust += r.adjustment;
-            t.charge += r.chargeCash;
-            t.transfer += r.transferOut;
-            t.grand += r.total;
+          const q = (this.masterSummarySearch || '').trim().toLowerCase();
+          return this._dcache('mstot_' + q + '_' + this.masterSummaryMonth, () => {
+            const list = this.masterSummaryRows();
+            const t = { customers: list.length, bags: 0, kg: 0, bill: 0, deposit: 0, adjust: 0, charge: 0, transfer: 0, grand: 0 };
+            list.forEach(r => {
+              t.bags += r.bags;
+              t.kg += r.kg;
+              t.bill += r.monthlyBill;
+              t.deposit += r.monthlyDeposit;
+              t.adjust += r.adjustment;
+              t.charge += r.chargeCash;
+              t.transfer += r.transferOut;
+              t.grand += r.total;
+            });
+            return t;
           });
-          return t;
         },
         masterSummaryPages() {
-          const rows = this.masterSummaryRows();
-          const size = this.masterSummaryPageSize || 14;
-          if (!rows.length) return [[]];
-          const pages = [];
-          for (let i = 0; i < rows.length; i += size) pages.push(rows.slice(i, i + size));
-          return pages;
+          const q = (this.masterSummarySearch || '').trim().toLowerCase();
+          return this._dcache('mspages_' + q + '_' + this.masterSummaryMonth + '_' + (this.masterSummaryPageSize || 14), () => {
+            const rows = this.masterSummaryRows();
+            const size = this.masterSummaryPageSize || 14;
+            if (!rows.length) return [[]];
+            const pages = [];
+            for (let i = 0; i < rows.length; i += size) pages.push(rows.slice(i, i + size));
+            return pages;
+          });
         },
         // মাস/সাল সিলেক্টর অপশন: সাম্প্রতিক ২৪ মাস (ডাটায় কোনো মাস থাকলে সেগুলোও ব্যবহৃত হয়)
         summaryMonthOptions() {
-          const opts = [];
-          const now = new Date();
-          for (let i = 23; i >= 0; i--) {
-            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const key = d.getFullYear() + '-' + this.pad2(d.getMonth() + 1);
-            const info = this.bnMonthInfo(key);
-            opts.push({ value: key, label: info.monthName + ' ' + info.yearDisplay });
-          }
-          return opts;
+          return this._dcache('summaryMonthOpts', () => {
+            const opts = [];
+            const now = new Date();
+            for (let i = 23; i >= 0; i--) {
+              const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+              const key = d.getFullYear() + '-' + this.pad2(d.getMonth() + 1);
+              const info = this.bnMonthInfo(key);
+              opts.push({ value: key, label: info.monthName + ' ' + info.yearDisplay });
+            }
+            return opts;
+          });
         },
         // প্রিন্ট: মাসিক বিল জেনারেটরের মতো — শুধু landscape @page ইনজেক্ট, কোনো body > * hide নয়
         // (body > *:not(...) ancestor লুকিয়ে সাদা কাগজ বাগ করত)। .no-print ও x-show আগেই বাকি UI লুকায়।
