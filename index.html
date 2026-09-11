@@ -1,4 +1,7 @@
 
+
+
+
 <!DOCTYPE html>
 <html lang="bn" class="h-full bg-[#F5F5F7] antialiased">
 <head>
@@ -640,9 +643,8 @@ import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, w
               <!-- Total Clients -->
               <div class="bg-white dark:bg-apple-darkCard p-5 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition duration-200">
                 <div>
-                  <p class="text-xs font-medium text-apple-secondary">মোট ক্লায়েন্ট</p>
-                  <p class="text-2xl font-bold mt-1" x-text="formatNumber(clients.length) + ' জন'"></p>
-                  <p class="text-[11px] text-apple-green mt-1">সক্রিয়: <span x-text="formatNumber(clients.filter(c=>c.status==='active').length)"></span> জন</p>
+                  <p class="text-xs font-medium text-apple-secondary">মোট জমা (টাকা)</p>
+                  <p class="text-2xl font-bold mt-1" x-text="'৳ ' + formatMoney(payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0))"></p>
                 </div>
                 <div class="w-11 h-11 bg-blue-50 dark:bg-blue-900/30 text-apple-blue rounded-xl flex items-center justify-center">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
@@ -1027,6 +1029,13 @@ import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, w
               </div>
             </div>
 
+            <!-- Pagination Controls -->
+            <div x-show="getFilteredClients().length > clientsPerPage" class="flex items-center justify-center gap-2 mt-4">
+                <button @click="clientPage = Math.max(1, clientPage - 1)" :disabled="clientPage === 1" class="px-3 py-1 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-lg text-xs font-medium disabled:opacity-50">পূর্বের</button>
+                <span class="text-xs font-semibold" x-text="'পৃষ্ঠা ' + clientPage + ' / ' + Math.ceil(getFilteredClients().length / clientsPerPage)"></span>
+                <button @click="clientPage = Math.min(Math.ceil(getFilteredClients().length / clientsPerPage), clientPage + 1)" :disabled="clientPage === Math.ceil(getFilteredClients().length / clientsPerPage)" class="px-3 py-1 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-gray-700 rounded-lg text-xs font-medium disabled:opacity-50">পরের</button>
+            </div>
+
             <!-- Client List Table -->
             <div class="bg-white dark:bg-apple-darkCard rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm overflow-hidden">
               <div class="overflow-x-auto">
@@ -1044,7 +1053,7 @@ import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, w
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                    <template x-for="client in getFilteredClients()" :key="client.id">
+                    <template x-for="client in getFilteredClients().slice((clientPage-1)*clientsPerPage, clientPage*clientsPerPage)" :key="client.id">
                       <tr class="hover:bg-gray-50/80 dark:hover:bg-zinc-800/50 transition">
                         <td class="py-3.5 px-4 font-bold text-apple-blue" x-text="client.clientId"></td>
                         <td class="py-3.5 px-4">
@@ -5049,6 +5058,8 @@ import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc, w
   <script>
     function app() {
       return {
+        clientPage: 1,
+        clientsPerPage: 6,
         // App State
         isLoading: false,
         loadingMessage: 'কাজটি সম্পন্ন হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...',
